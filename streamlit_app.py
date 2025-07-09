@@ -6,8 +6,15 @@ from openai_demo_matcher import OpenAIDemoMatcher
 from openai_gpt_matcher import OpenAIGPTMatcher
 from dotenv import load_dotenv
 
-# Load environment variables from .env if present
-load_dotenv()
+# Explicitly load .env from the current working directory
+DOTENV_PATH = os.path.join(os.getcwd(), '.env')
+load_dotenv(DOTENV_PATH)
+
+# Debug: Show the loaded API key (masked)
+def mask_key(key):
+    if not key or len(key) < 8:
+        return key
+    return key[:4] + '...' + key[-4:]
 
 # Set page config
 st.set_page_config(
@@ -30,7 +37,13 @@ if "openai_api_key" in st.secrets:
     openai_api_key = st.secrets["openai_api_key"]
 elif os.getenv("OPENAI_API_KEY"):
     openai_api_key = os.getenv("OPENAI_API_KEY")
-else:
+
+# Debug: Show the loaded API key (masked) in sidebar for troubleshooting
+with st.sidebar:
+    st.markdown("**Debug Info:**")
+    st.write("OPENAI_API_KEY loaded:", mask_key(openai_api_key))
+
+if not openai_api_key:
     st.warning("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
 
 # Select matcher type
