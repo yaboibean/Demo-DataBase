@@ -4,11 +4,11 @@ import pandas as pd
 from demo_matcher import DemoMatcher
 from openai_demo_matcher import OpenAIDemoMatcher
 from openai_gpt_matcher import OpenAIGPTMatcher
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-# Explicitly load .env from the current working directory
-DOTENV_PATH = os.path.join(os.getcwd(), '.env')
-load_dotenv(DOTENV_PATH)
+# Try to find and load the .env file from anywhere in the project
+dotenv_path = find_dotenv()
+load_dotenv(dotenv_path, override=True)
 
 # Debug: Show the loaded API key (masked)
 def mask_key(key):
@@ -31,20 +31,26 @@ MATCH_COLUMNS = ["Client Problem", "Instalily AI Capabilities", "Benefit to Clie
 VIDEO_LINK_COL = "Video Link"
 COMPANY_COL = "Company Name"
 
-# Load API key robustly
-openai_api_key = None
-if "openai_api_key" in st.secrets:
-    openai_api_key = st.secrets["openai_api_key"]
-elif os.getenv("OPENAI_API_KEY"):
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+# Load API key robustly (strip whitespace just in case)
+def get_openai_key():
+    if "openai_api_key" in st.secrets:
+        return st.secrets["openai_api_key"].strip()
+    key = os.getenv("OPENAI_API_KEY")
+    if key:
+        return key.strip()
+    return None
+
+openai_api_key = get_openai_key()
 
 # Debug: Show the loaded API key (masked) in sidebar for troubleshooting
 with st.sidebar:
     st.markdown("**Debug Info:**")
     st.write("OPENAI_API_KEY loaded:", mask_key(openai_api_key))
+    st.write(".env path used:", dotenv_path)
 
 if not openai_api_key:
-    st.warning("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
+    st.error("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
+    st.stop()
 
 # Select matcher type
 matcher_type = st.sidebar.selectbox(
