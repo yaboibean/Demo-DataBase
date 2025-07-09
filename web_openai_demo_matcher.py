@@ -58,20 +58,19 @@ if st.button("Find Similar Demos (OpenAI)"):
                 score = demo['similarity_score']
                 rank = demo['rank']
                 company = info.get('Name/Client', 'Unknown Company')
-                if score >= 0.7:
-                    score_desc = "Excellent match"
-                elif score >= 0.5:
-                    score_desc = "Strong match"
-                elif score >= 0.3:
-                    score_desc = "Possible match"
-                else:
-                    score_desc = "Somewhat related"
                 st.markdown(f"### {rank}. {company}")
-                st.markdown(f"**Similarity Score:** {score:.3f} ({score_desc})")
-                for col in match_columns:
-                    if col in info and pd.notna(info[col]):
-                        st.markdown(f"**{col}:** {info[col]}")
-                demo_link = info.get('Portal Demo Link') or info.get('Onedrive Demo Link')
-                if demo_link and pd.notna(demo_link):
-                    st.markdown(f"**Demo Link:** [{demo_link}]({demo_link})")
+                st.markdown(f"**Similarity Score:** {score:.3f}")
+                # Show a reason for similarity using the most relevant columns
+                reason = []
+                if 'Client Problem' in info and pd.notna(info['Client Problem']):
+                    reason.append(f"Problem: {info['Client Problem']}")
+                if 'Instalily AI Capabilities' in info and pd.notna(info['Instalily AI Capabilities']):
+                    reason.append(f"AI Capabilities: {info['Instalily AI Capabilities']}")
+                if 'Benefit to Client' in info and pd.notna(info['Benefit to Client']):
+                    reason.append(f"Benefit: {info['Benefit to Client']}")
+                st.markdown(f"**Reason:** {' | '.join(reason)}")
+                # Show video link if available
+                video_link = info.get('Video Link')
+                if video_link and pd.notna(video_link):
+                    st.markdown(f"**Demo Link:** [{video_link}]({video_link})")
                 st.markdown("---")
