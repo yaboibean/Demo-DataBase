@@ -1,6 +1,7 @@
-pandas>=1.5.0
-numpy>=1.24.0
-scikit-learn>=1.3.0
-openpyxl>=3.1.0
-sentence-transformers>=2.2.0
-streamlit>=1.28.0
+openai
+python-dotenv
+streamlit
+pandas
+numpy
+scikit-learn
+sentence-transformers

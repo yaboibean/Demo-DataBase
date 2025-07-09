@@ -1,119 +1,74 @@
+import os
 import pandas as pd
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-import json
-import os
-from typing import List, Dict, Tuple
-import warnings
-warnings.filterwarnings('ignore')
+from sklearn.metrics.pairwise import cosine_similarity
+from typing import List, Dict, Any
 
 class DemoMatcher:
-    def __init__(self, spreadsheet_path: str = None, match_columns=None):
+    def __init__(self, spreadsheet_path: str, match_columns: List[str], embedding_model: str = "all-MiniLM-L6-v2"):
         """
-        Initialize the Demo Matcher system
-        
+        Initialize the DemoMatcher.
         Args:
-            spreadsheet_path: Path to the spreadsheet containing past demos
-            match_columns: List of columns to use for semantic matching
+            spreadsheet_path: Path to the CSV file containing demo data.
+            match_columns: List of columns to use for matching.
+            embedding_model: SentenceTransformer model name.
         """
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.demos_df = None
-        self.demo_embeddings = None
-        # Use user-specified columns or default to the three most relevant
-        if match_columns is None:
-            self.match_columns = ["Client Problem", "Instalily AI Capabilities", "Benefit to Client"]
-        else:
-            self.match_columns = match_columns
-        if spreadsheet_path:
-            self.load_spreadsheet(spreadsheet_path)
-    
-    def load_spreadsheet(self, file_path: str):
-        """
-        Load the spreadsheet with past demos
-        
-        Expected columns:
-        - Company Name
-        - Industry
-        - Problem/Need
-        - Solution Provided
-        - Demo Type
-        - Demo Link/File
-        - Success Rate
-        - Date
-        """
+        self.spreadsheet_path = spreadsheet_path
+        self.match_columns = match_columns
+        self.embedding_model = embedding_model
         try:
-            if file_path.endswith('.csv'):
-                self.demos_df = pd.read_csv(file_path)
-            elif file_path.endswith(('.xlsx', '.xls')):
-                self.demos_df = pd.read_excel(file_path)
-            else:
-                raise ValueError("Unsupported file format. Please use CSV or Excel files.")
-            
-            print(f"Loaded {len(self.demos_df)} demos from {file_path}")
-            print(f"Columns: {list(self.demos_df.columns)}")
-            
-            # Create embeddings for all past demos
-            self._create_embeddings()
-            
+            self.demos_df = pd.read_csv(spreadsheet_path)
         except Exception as e:
-            print(f"Error loading spreadsheet: {e}")
-            return None
-    
-    def _create_embeddings(self):
-        """Create embeddings for all past demos using only the specified columns"""
-        if self.demos_df is None:
-            print("No demo data loaded!")
-            return
-        
-        # Combine relevant text fields for embedding
+            raise RuntimeError(f"Failed to read spreadsheet: {e}")
+        if not all(col in self.demos_df.columns for col in match_columns):
+            missing = [col for col in match_columns if col not in self.demos_df.columns]
+            raise ValueError(f"Missing columns in CSV: {missing}")
+        self.model = SentenceTransformer(self.embedding_model)
+        self.demo_embeddings = self._create_embeddings()
+
+    def _create_embeddings(self) -> np.ndarray:
+        """
+        Create embeddings for all demos in the dataframe.
+        Returns:
+            np.ndarray of demo embeddings.
+        """
         demo_texts = []
         for _, row in self.demos_df.iterrows():
-            text_parts = []
-            for col in self.match_columns:
-                if col in row and pd.notna(row[col]):
-                    text_parts.append(str(row[col]))
+            text_parts = [str(row[col]) for col in self.match_columns if col in row and pd.notna(row[col])]
             demo_texts.append(" | ".join(text_parts))
-        
-        print(f"Creating embeddings for {len(demo_texts)} demos using columns: {self.match_columns}")
-        self.demo_embeddings = self.model.encode(demo_texts)
-        print(f"Created embeddings for {len(demo_texts)} demos")
-    
-    def find_similar_demos(self, customer_need: str, top_k: int = 5) -> List[Dict]:
+        if not demo_texts:
+            raise ValueError("No demo texts found for embedding.")
+        return self.model.encode(demo_texts, show_progress_bar=False)
+
+    def find_similar_demos(self, customer_need: str, top_k: int = 5, min_score: float = 0.3) -> List[Dict[str, Any]]:
         """
-        Find the most similar past demos for a given customer need
-        
+        Find the most similar demos to a customer need.
         Args:
-            customer_need: Description of current customer's problem/need
-            top_k: Number of top matches to return
-            
+            customer_need: The client's need/problem as a string.
+            top_k: Number of top results to return.
+            min_score: Minimum cosine similarity score to consider a match.
         Returns:
-            List of dictionaries containing demo information and similarity scores
+            List of dicts with similarity_score, demo_info, and rank.
         """
-        if self.demos_df is None or self.demo_embeddings is None:
-            print("No demo data or embeddings available!")
-            return []
-        
-        # Create embedding for the customer need
-        need_embedding = self.model.encode([customer_need])
-        
-        # Calculate similarities
+        if not customer_need or not isinstance(customer_need, str):
+            raise ValueError("customer_need must be a non-empty string.")
+        need_embedding = self.model.encode([customer_need])[0].reshape(1, -1)
         similarities = cosine_similarity(need_embedding, self.demo_embeddings)[0]
-        
-        # Get top matches
-        top_indices = np.argsort(similarities)[::-1][:top_k]
-        
+        top_indices = np.argsort(similarities)[::-1]
         results = []
         for idx in top_indices:
-            similarity_score = similarities[idx]
+            score = similarities[idx]
+            if score < min_score:
+                continue
             demo_info = self.demos_df.iloc[idx].to_dict()
-            
             results.append({
-                'similarity_score': float(similarity_score),
+                'similarity_score': float(score),
                 'demo_info': demo_info,
                 'rank': len(results) + 1
             })
-        
+            if len(results) >= top_k:
+                break
         return results
     
     def get_detailed_analysis(self, customer_need: str, top_k: int = 5) -> str:
