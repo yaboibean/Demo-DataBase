@@ -20,10 +20,10 @@ match_columns = ["Client Problem", "Instalily AI Capabilities", "Benefit to Clie
 
 api_key = get_api_key()
 
-def extract_company_names(gpt_output):
-    # Extract company names from GPT output numbered list
-    pattern = r"\d+\.\s*([^:]+):"
-    return re.findall(pattern, gpt_output)
+def extract_company_names_and_indices(gpt_output):
+    # Extract company names and their order from GPT output numbered list
+    pattern = r"(\d+)\.\s*([^:]+):"
+    return [(int(num), name.strip()) for num, name in re.findall(pattern, gpt_output)]
 
 customer_need = st.text_area(
     "Describe the current client's problem/need:",
@@ -44,11 +44,11 @@ if st.button("Find Best Matches (GPT Reasoning)"):
             result = matcher.find_best_match(customer_need, top_k=num_results)
         st.subheader("GPT-4o Top Matches:")
         st.markdown(result)
-        # Show video link for only the top matches
-        company_names = extract_company_names(result)
+        # Show video link for only the top matches, matching by company name
+        company_indices = extract_company_names_and_indices(result)
         df = pd.read_csv(csv_path)
-        for company in company_names:
-            row = df[df['Name/Client'].astype(str).str.strip() == company.strip()]
+        for idx, company in company_indices:
+            row = df[df['Name/Client'].astype(str).str.strip() == company]
             if not row.empty and 'Video Link' in row.columns:
                 video_link = row.iloc[0]['Video Link']
                 if pd.notna(video_link) and str(video_link).strip():
