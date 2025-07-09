@@ -6,7 +6,7 @@ from openai_demo_matcher import OpenAIDemoMatcher
 from openai_gpt_matcher import OpenAIGPTMatcher
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from .env if present
 load_dotenv()
 
 # Set page config
@@ -24,8 +24,14 @@ MATCH_COLUMNS = ["Client Problem", "Instalily AI Capabilities", "Benefit to Clie
 VIDEO_LINK_COL = "Video Link"
 COMPANY_COL = "Company Name"
 
-# Load API key
-openai_api_key = st.secrets["openai_api_key"] if "openai_api_key" in st.secrets else os.getenv("OPENAI_API_KEY")
+# Load API key robustly
+openai_api_key = None
+if "openai_api_key" in st.secrets:
+    openai_api_key = st.secrets["openai_api_key"]
+elif os.getenv("OPENAI_API_KEY"):
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+else:
+    st.warning("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
 
 # Select matcher type
 matcher_type = st.sidebar.selectbox(
@@ -84,7 +90,10 @@ if st.button("Find Matches"):
                     st.write(f"Reason: {explanation}")
                 if video_link:
                     st.markdown(f"[Watch Video]({video_link})")
-                st.write(demo)
+                # Show all key fields
+                for k, v in demo.items():
+                    if k not in (COMPANY_COL, VIDEO_LINK_COL):
+                        st.write(f"**{k}:** {v}")
                 st.markdown("---")
 
             # Bar chart for embedding-based matchers
