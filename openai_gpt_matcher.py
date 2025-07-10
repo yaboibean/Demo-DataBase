@@ -49,13 +49,14 @@ class OpenAIGPTMatcher:
         # Only use the 'Client Problem' column for matching
         client_problems = self.demos_df['Client Problem'].fillna('').tolist()
         prompt = (
-            f"You are an expert sales engineer and AI solutions consultant at a B2B AI company. Your job is to help our sales team select the {top_k} most relevant past demos to show a new prospective client, based on their specific business problem or need.\n"
-            "You must use deep semantic reasoning and business understanding, not just keyword matching. ONLY use the 'Client Problem' field for your analysis.\n"
-            "Your goal is to find demos where the original client's problem is most similar to the new client's need.\n"
-            "Only select demos that are truly relevant to the new client's need, even if the wording is different. Ignore demos that are only superficially related.\n"
+            f"You are an expert AI demo matcher for a B2B AI company. Your job is to select the {top_k} most relevant past demos from the list below, given a specific client problem or need.\n"
+            "You must use deep semantic reasoning, not just keyword matching. ONLY use the 'Client Problem' field for your analysis.\n"
+            "Your goal is to find demos where the original client's problem is most similar in meaning and topic to the new client's need.\n"
+            "IGNORE any demos that do not clearly relate to the main topic or keywords in the new client's need. If a demo is about a different business area (e.g., supply chain vs. customer engagement), do NOT select it.\n"
+            "Only select demos that are truly relevant to the new client's need, even if the wording is different.\n"
             "For each selected demo, provide:\n"
-            "  1) A similarity score (0.00-1.00) reflecting how well the demo matches the new client's need, based on your full business and technical understanding.\n"
-            "  2) A concise, sales-ready explanation of why this demo is a strong match, referencing specific aspects of the new client's need and the demo fields. This explanation should help a salesperson justify showing this demo to the client.\n"
+            "  1) A similarity score (0.00-1.00) reflecting how well the demo matches the new client's need, based on your full understanding.\n"
+            "  2) A concise explanation of why this demo is a strong match, referencing specific aspects of the new client's need and the demo problem.\n"
             "  3) The company name and video link, copied exactly as shown in the data.\n"
             "  4) Only use information present in the provided data. Do not invent or infer any details.\n"
             "\nAll output fields (company, video_link, etc.) must be word-for-word from the data.\n"
