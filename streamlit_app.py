@@ -226,6 +226,48 @@ if 'chat_history' not in st.session_state:
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🤖 Chatbot Assistant")
 
+# Add minimal CSS for ChatGPT-like bubbles
+st.markdown('''
+<style>
+.sidebar-chat-bubble {
+    border-radius: 1.2em;
+    padding: 0.7em 1.1em;
+    margin-bottom: 0.5em;
+    max-width: 95%;
+    word-break: break-word;
+    font-size: 1em;
+}
+.sidebar-chat-user {
+    background: #23272f;
+    color: #fff;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
+    align-self: flex-end;
+    border-bottom-right-radius: 0.3em;
+    border-top-right-radius: 1.2em;
+    border-top-left-radius: 1.2em;
+    border-bottom-left-radius: 1.2em;
+}
+.sidebar-chat-bot {
+    background: #ececf1;
+    color: #222;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
+    align-self: flex-start;
+    border-bottom-left-radius: 0.3em;
+    border-top-right-radius: 1.2em;
+    border-top-left-radius: 1.2em;
+    border-bottom-right-radius: 1.2em;
+}
+.sidebar-chat-label {
+    font-size: 0.85em;
+    color: #888;
+    margin-bottom: 0.1em;
+    margin-left: 0.2em;
+}
+</style>
+''', unsafe_allow_html=True)
+
 chat_input = st.sidebar.text_input(
     "Ask the AI a question about B2B AI demos:",
     key="chat_input",
@@ -276,8 +318,10 @@ if st.session_state['chat_history']:
     st.sidebar.markdown("---")
     st.sidebar.markdown("#### Conversation History")
     for user, bot in st.session_state['chat_history'][-5:]:
-        st.sidebar.markdown(f"**You:** {user}")
-        st.sidebar.markdown(f"**AI:** {bot}")
+        st.sidebar.markdown(f"<div class='sidebar-chat-label'>You</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div class='sidebar-chat-bubble sidebar-chat-user'>{user}</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div class='sidebar-chat-label'>AI</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div class='sidebar-chat-bubble sidebar-chat-bot'>{bot}</div>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
