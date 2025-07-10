@@ -144,16 +144,10 @@ if df_full is not None:
         start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
         end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
-# --- CHATBOT: SIDEBAR INPUT, SLIDE TO MAIN PANEL ON MESSAGE ---
-if 'chat_history' not in st.session_state:
-    st.session_state['chat_history'] = []
-
-# Sidebar chatbot input and chat history
-show_sidebar_chat = not st.session_state['chat_history'] or not st.session_state.get('expand_chat', False)
-if show_sidebar_chat:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🤖 Chatbot Assistant")
-    chat_input = st.sidebar.text_input(
+# --- SIDEBAR: 20% WIDTH, CONTAINS CHATBOT + FILTERS ---
+with st.sidebar:
+    st.markdown("### 🤖 Chatbot Assistant")
+    chat_input = st.text_input(
         "Ask the AI a question about B2B AI demos:",
         key="chat_input_sidebar",
         placeholder="E.g. What is a good demo for insurance fraud detection?"
@@ -198,7 +192,27 @@ if show_sidebar_chat:
                 st.session_state['chat_history'].append((chat_input, answer))
             except Exception as e:
                 st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+    # --- SHOW CHAT HISTORY (last 6) ---
+    if st.session_state['chat_history']:
+        st.markdown('''<style>.modern-chat-bubble-user{background:#23272f;color:#fff;border-radius:1.2em 1.2em 0.3em 1.2em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-end;max-width:90%;}.modern-chat-bubble-bot{background:#ececf1;color:#222;border-radius:1.2em 1.2em 1.2em 0.3em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-start;max-width:90%;}</style>''', unsafe_allow_html=True)
+        for user, bot in st.session_state['chat_history'][-6:]:
+            st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("### Filter Demos")
+    if df_full is not None:
+        for label, col in FILTER_COLS:
+            if col in df_full.columns:
+                options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
+                selected = st.selectbox(f"{label}", options, key=f"filter_{col}")
+                selected_filters[col] = selected
+        if "Date Uploaded" in df_full.columns:
+            min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
+            max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
+            start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
+            end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
+# --- MAIN AREA: 80% WIDTH, SEARCH/RESULTS ---
 # --- MODERN DYNAMIC LAYOUT: MAIN AREA SPLIT ---
 if st.session_state.get('expand_chat', False):
     # --- CENTERED CHATBOT PANEL, FULL WIDTH ---
