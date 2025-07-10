@@ -23,7 +23,52 @@ st.set_page_config(
 )
 
 # Title
-st.title("InstaDemo Search")
+st.markdown("""
+    <style>
+    .main-title {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #1E90FF;
+        margin-bottom: 0.5em;
+        letter-spacing: 1px;
+    }
+    .subtitle {
+        font-size: 1.2rem;
+        color: #888;
+        margin-bottom: 2em;
+    }
+    .result-card {
+        background: #181c2b;
+        border-radius: 1.2em;
+        padding: 1.5em 2em;
+        margin-bottom: 2em;
+        box-shadow: 0 2px 16px 0 rgba(30,144,255,0.08);
+        border: 1px solid #22263a;
+    }
+    .score {
+        color: #FFD700;
+        font-size: 1.1em;
+        font-weight: bold;
+    }
+    .reason {
+        color: #00FFAA;
+        font-size: 1em;
+        margin-bottom: 0.5em;
+    }
+    .demo-link {
+        color: #1E90FF;
+        font-size: 1em;
+        font-weight: bold;
+        margin-bottom: 0.5em;
+    }
+    .field-label {
+        color: #aaa;
+        font-weight: 600;
+    }
+    </style>
+    <div class='main-title'>InstaDemo Search</div>
+    <div class='subtitle'>Find the best AI demo for your client's needs</div>
+""", unsafe_allow_html=True)
 
 # File and columns - Use the actual CSV file and correct column names
 SPREADSHEET_PATH = os.getenv("DEMO_SPREADSHEET", "Copy of Master File Demos Database - Demos Database.csv")
@@ -88,17 +133,16 @@ if st.button("Find Matches"):
         if not results:
             st.info("No relevant demos found.")
         else:
-            st.subheader("Top Matches:")
+            st.subheader("")
             for res in results:
                 demo = res.get('demo_info', {})
-                st.markdown(f"**{res.get('rank', '')}. {demo.get(COMPANY_COL, 'N/A')}**")
-                # Show the new required fields at the top, styled for visibility
-                st.markdown(f"<span style='color:#FFD700'><b>Similarity Score:</b> {res.get('similarity_score', 'N/A'):.3f}</span>", unsafe_allow_html=True)
-                st.markdown(f"<span style='color:#00FFAA'><b>Reason:</b> {res.get('explanation', 'N/A')}</span>", unsafe_allow_html=True)
+                st.markdown(f"<div class='result-card'>", unsafe_allow_html=True)
+                st.markdown(f"<span class='score'>⭐ Similarity Score: {res.get('similarity_score', 'N/A'):.3f}</span>", unsafe_allow_html=True)
+                st.markdown(f"<div class='reason'><b>Reason:</b> {res.get('explanation', 'N/A')}</div>", unsafe_allow_html=True)
                 demo_link = res.get('demo_link')
                 if demo_link:
-                    st.markdown(f"<span style='color:#1E90FF'><b>Demo Link:</b> <a href='{demo_link}' target='_blank'>Click here</a></span>", unsafe_allow_html=True)
-                # Only show the requested fields, word-for-word from the CSV
+                    st.markdown(f"<div class='demo-link'><b>Demo Link:</b> <a href='{demo_link}' target='_blank'>Click here</a></div>", unsafe_allow_html=True)
+                st.markdown(f"<h4 style='margin-top:0.5em;'>{res.get('rank', '')}. {demo.get(COMPANY_COL, 'N/A')}</h4>", unsafe_allow_html=True)
                 fields_to_show = [
                     (COMPANY_COL, 'Company Name'),
                     ('Date Uploaded', 'Date Uploaded'),
@@ -110,10 +154,10 @@ if st.button("Find Matches"):
                 for col, label in fields_to_show:
                     value = demo.get(col, '')
                     if col == VIDEO_LINK_COL and value:
-                        st.markdown(f"**{label}:** [Link]({value})")
+                        st.markdown(f"<span class='field-label'>{label}:</span> <a href='{value}' target='_blank'>Link</a>", unsafe_allow_html=True)
                     elif value:
-                        st.write(f"**{label}:** {value}")
-                st.markdown("---")
+                        st.markdown(f"<span class='field-label'>{label}:</span> {value}", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by Instalily AI. Secure & ready for Streamlit Community Cloud.")
