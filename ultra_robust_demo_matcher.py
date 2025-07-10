@@ -378,38 +378,32 @@ def main():
     """Main function for testing."""
     try:
         print("🚀 Initializing Ultra-Robust Demo Matcher...")
-        
-        # Initialize
-        matcher = UltraRobustDemoMatcher("Copy of Master File Demos Database - Demos Database.csv")
-        
+        # Use absolute path for CSV file
+        csv_path = "/Users/arjansingh/Downloads/Demo Database/Copy of Master File Demos Database - Demos Database.csv"
+        matcher = UltraRobustDemoMatcher(csv_path)
         # Show stats
         print(matcher.get_stats())
         print()
-        
         # Test problematic query
         print("🧪 Testing the problematic query...")
         print(matcher.test_problematic_query())
-        
         # Test additional queries
-        print("\\n" + "=" * 80)
+        print("\n" + "=" * 80)
         print("🎯 ADDITIONAL TESTS")
         print("=" * 80)
-        
         test_queries = [
             "customer service automation",
             "inventory management",
             "supply chain optimization"
         ]
-        
         for query in test_queries:
-            print(f"\\nTesting: '{query}'")
+            print(f"\nTesting: '{query}'")
             try:
                 results = matcher.search(query, top_k=2)
                 for result in results:
                     print(f"  → {result['client_name']} ({result['similarity']:.4f})")
             except Exception as e:
                 print(f"  → Error: {e}")
-        
     except Exception as e:
         logger.error(f"❌ Main execution failed: {e}")
         print(f"Error: {e}")
