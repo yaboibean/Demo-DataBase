@@ -97,7 +97,7 @@ class OpenAIGPTMatcher:
             "Only select demos that are truly relevant to the new client's need, even if the wording is different.\n"
             "For each selected demo, provide:\n"
             "  1) A similarity score (0.00-1.00) reflecting how well the demo matches the new client's need, based on your full understanding.\n"
-            "  2) A concise explanation of why this demo is a strong match, referencing specific aspects of the new client's need and the demo problem.\n"
+            "  2) A concise explanation of why this demo is a strong match, referencing specific aspects of the new client's need and the demo problem. Start the reasoning with 'this demo is a strong match because...'\n"
             "  3) The demo_index number exactly as shown in the list.\n"
             "  4) Only use information present in the provided data. Do not invent or infer any details.\n"
             "\nClient Need: " + cleaned_customer_need + "\n\n"
