@@ -51,6 +51,28 @@ st.markdown("""
         min-height: 0;
         word-break: break-word;
     }
+    .send-btn {
+        background: #22263a;
+        border: none;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        margin-left: 0.5em;
+        margin-top: 0.5em;
+        transition: background 0.2s;
+    }
+    .send-btn:hover {
+        background: #1E90FF;
+    }
+    .send-arrow {
+        width: 28px;
+        height: 28px;
+        display: block;
+    }
     .score {
         color: #FFD700;
         font-size: 1.1em;
@@ -70,6 +92,12 @@ st.markdown("""
     .field-label {
         color: #aaa;
         font-weight: 600;
+    }
+    .input-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.5em;
+        margin-bottom: 1.5em;
     }
     </style>
     <div class='main-title'>InstaDemo Search</div>
@@ -114,20 +142,34 @@ if not openai_api_key:
     st.error("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
     st.stop()
 
-# Input box and send button
+# Input box and custom send button
+from streamlit.components.v1 import html
+
 with st.form(key="search_form", clear_on_submit=False):
+    st.markdown("<div class='input-row'>", unsafe_allow_html=True)
     customer_need = st.text_area(
         "Enter the client's problem:",
         height=100,
         key="customer_need",
-        help="Type your client's need and press Enter or click Send to search."
+        help="Type your client's need and press Enter or click the arrow to search."
     )
-    submitted = st.form_submit_button("Send")
+    st.markdown("</div>", unsafe_allow_html=True)
+    # Custom circular send button with arrow SVG
+    send_btn_html = '''
+    <button type="submit" class="send-btn">
+        <svg class="send-arrow" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="48" fill="white"/>
+            <path d="M50 30 L50 70 M50 70 L35 55 M50 70 L65 55" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
+    '''
+    html(send_btn_html, height=60)
+    submitted = st.form_submit_button(label="", help="Send")
 
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
 
-# Only show results if user has started typing
+# Only show results if user has started typing and submitted
 if customer_need.strip() and submitted:
     with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
         try:
