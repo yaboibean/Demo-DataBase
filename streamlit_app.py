@@ -136,27 +136,24 @@ if st.button("Find Matches"):
             st.subheader("")
             for res in results:
                 demo = res.get('demo_info', {})
-                st.markdown(f"<div class='result-card'>", unsafe_allow_html=True)
+                # Title (above everything)
+                st.markdown(f"<h3 style='margin-bottom:0.2em'>{demo.get(COMPANY_COL, 'N/A')}</h3>", unsafe_allow_html=True)
+                # Date Uploaded
+                st.markdown(f"<span class='field-label'>Date Uploaded:</span> {demo.get('Date Uploaded', 'N/A')}", unsafe_allow_html=True)
+                # Similarity Score
                 st.markdown(f"<span class='score'>⭐ Similarity Score: {res.get('similarity_score', 'N/A'):.3f}</span>", unsafe_allow_html=True)
+                # Reason
                 st.markdown(f"<div class='reason'><b>Reason:</b> {res.get('explanation', 'N/A')}</div>", unsafe_allow_html=True)
+                # Demo Link
                 demo_link = res.get('demo_link')
                 if demo_link:
                     st.markdown(f"<div class='demo-link'><b>Demo Link:</b> <a href='{demo_link}' target='_blank'>Click here</a></div>", unsafe_allow_html=True)
-                st.markdown(f"<h4 style='margin-top:0.5em;'>{res.get('rank', '')}. {demo.get(COMPANY_COL, 'N/A')}</h4>", unsafe_allow_html=True)
-                fields_to_show = [
-                    (COMPANY_COL, 'Company Name'),
-                    ('Date Uploaded', 'Date Uploaded'),
-                    ('Client Problem', 'Client Problem'),
-                    ('Instalily AI Capabilities', 'Instalily AI Capabilities'),
-                    ('Benefit to Client', 'Benefit to Client'),
-                    (VIDEO_LINK_COL, 'Demo Link'),
-                ]
-                for col, label in fields_to_show:
-                    value = demo.get(col, '')
-                    if col == VIDEO_LINK_COL and value:
-                        st.markdown(f"<span class='field-label'>{label}:</span> <a href='{value}' target='_blank'>Link</a>", unsafe_allow_html=True)
-                    elif value:
-                        st.markdown(f"<span class='field-label'>{label}:</span> {value}", unsafe_allow_html=True)
+                # Client Problem
+                st.markdown(f"<span class='field-label'>Client Problem:</span> {demo.get('Client Problem', '')}", unsafe_allow_html=True)
+                # Instalily AI Capabilities
+                st.markdown(f"<span class='field-label'>Instalily AI Capabilities:</span> {demo.get('Instalily AI Capabilities', '')}", unsafe_allow_html=True)
+                # Benefit to Client
+                st.markdown(f"<span class='field-label'>Benefit to Client:</span> {demo.get('Benefit to Client', '')}", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")

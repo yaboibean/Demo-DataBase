@@ -15,7 +15,7 @@ class OpenAIGPTMatcher:
         """
         self.spreadsheet_path = spreadsheet_path # Path to the CSV file
         self.match_columns = match_columns
-        self.gpt_model = gpt_model
+        self.gpt_model = gpt_model or "gpt-4o"
         openai.api_key = openai_api_key
         try:
             self.demos_df = pd.read_csv(spreadsheet_path)
@@ -37,7 +37,7 @@ class OpenAIGPTMatcher:
 
     def find_best_demos(self, customer_need: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
-        Use GPT-4o to reason about the best demo matches for a customer need.
+        Use GPT-4o (ChatGPT o3) to reason about the best demo matches for a customer need.
         Args:
             customer_need: The client's need/problem as a string.
             top_k: Number of top results to return.
