@@ -22,7 +22,7 @@ customer_need = st.text_area(
     height=100
 )
 
-num_results = st.slider("Number of top matches to show", 1, 10, 3)
+num_results = st.slider("Number of top matches to show", 1, 10, 2)
 
 if st.button("Find Similar Demos"):
     if not customer_need.strip():

@@ -70,12 +70,13 @@ if st.button("Find Matches"):
     if not customer_need.strip():
         st.warning("Please enter a client need/problem.")
     else:
-        try:
-            matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
-            results = matcher.find_best_demos(customer_need, top_k=top_k)
-        except Exception as e:
-            st.error(f"Error: {e}")
-            st.stop()
+        with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
+            try:
+                matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
+                results = matcher.find_best_demos(customer_need, top_k=top_k)
+            except Exception as e:
+                st.error(f"Error: {e}")
+                st.stop()
 
         if not results:
             st.info("No relevant demos found.")
