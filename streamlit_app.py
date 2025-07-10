@@ -186,64 +186,55 @@ if not openai_api_key:
 from streamlit.components.v1 import html
 
 with st.form(key="search_form", clear_on_submit=False):
-    st.markdown('''
-    <style>
-    .input-container {
-        position: relative;
-        width: 100%;
-        margin-bottom: 1.5em;
-    }
-    .send-btn-abs {
-        position: absolute;
-        right: 12px;
-        bottom: 12px;
-        background: #22263a;
-        border: none;
-        border-radius: 50%;
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background 0.2s;
-        padding: 0;
-        z-index: 2;
-    }
-    .send-btn-abs:hover {
-        background: #1E90FF;
-    }
-    .send-arrow-up {
-        width: 28px;
-        height: 28px;
-        display: block;
-    }
-    /* Hide the default Streamlit submit button */
-    button[title="Submit"] {
-        display: none !important;
-    }
-    </style>
-    <div class="input-container">
-    ''', unsafe_allow_html=True)
-    customer_need = st.text_area(
-        "Enter the client's problem:",
-        height=100,
-        key="customer_need",
-        help="Type your client's need and press Enter or click the arrow to search."
-    )
-    send_btn_html = '''
-    <button type="submit" class="send-btn-abs" title="Submit">
-        <svg class="send-arrow-up" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="48" fill="white"/>
-            <path d="M50 70 L50 30 M50 30 L35 45 M50 30 L65 45" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    </button>
-    </div>
-    '''
-    html(send_btn_html, height=80)
-    st.markdown("</div>", unsafe_allow_html=True)
-    # Hide the Streamlit submit button by giving it a hidden label
-    submitted = st.form_submit_button(label=" ", help="Send")
+    cols = st.columns([10, 1])
+    with cols[0]:
+        customer_need = st.text_area(
+            "Enter the client's problem:",
+            height=100,
+            key="customer_need",
+            help="Type your client's need and press Enter or click the arrow to search."
+        )
+    with cols[1]:
+        st.markdown('''
+        <style>
+        .send-btn-col {
+            display: flex;
+            align-items: flex-end;
+            height: 100%;
+            justify-content: center;
+        }
+        .send-btn {
+            background: #22263a;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            padding: 0;
+        }
+        .send-btn:hover {
+            background: #1E90FF;
+        }
+        .send-arrow-up {
+            width: 28px;
+            height: 28px;
+            display: block;
+        }
+        </style>
+        <div class="send-btn-col">
+            <button type="submit" class="send-btn">
+                <svg class="send-arrow-up" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="48" fill="white"/>
+                    <path d="M50 70 L50 30 M50 30 L35 45 M50 30 L65 45" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+        ''', unsafe_allow_html=True)
+    submitted = st.form_submit_button(label="", help="Send")
 
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
