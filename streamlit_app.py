@@ -168,7 +168,7 @@ st.markdown("""
 <div class='big-chatbot-card'>
     <div class='big-chatbot-title'>🤖 InstaDemo Chatbot</div>
     <div style='font-size:1.1em; color:#fff; margin-bottom:1em; text-align:center;'>
-        Enter a client issue (e.g. <b>"supply chain issues"</b>) or ask a question about B2B AI demos. The AI will find the most relevant demo(s) or answer your question using the database.
+        Enter a client issue or ask a question about the demos.
     </div>
 """, unsafe_allow_html=True)
 
