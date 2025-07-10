@@ -97,7 +97,34 @@ try:
 except Exception as e:
     df_full = None
 
-# Remove the old demo search input and related logic
+# --- SIDEBAR FILTERS ---
+st.sidebar.markdown("### Filter Demos")
+# Number of results
+if 'top_k' not in st.session_state:
+    st.session_state['top_k'] = 2
+st.sidebar.slider("Number of top matches", 1, 10, st.session_state['top_k'], key="top_k")
+
+# Only keep Industry and Date Uploaded filters
+FILTER_COLS = [
+    ("Industry", "Industry"),
+]
+selected_filters = {}
+start_date = None
+end_date = None
+if df_full is not None:
+    # Industry filter
+    for label, col in FILTER_COLS:
+        if col in df_full.columns:
+            options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
+            selected = st.sidebar.selectbox(f"{label}", options, key=f"filter_{col}")
+            selected_filters[col] = selected
+    # Date Uploaded range filter
+    if "Date Uploaded" in df_full.columns:
+        min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
+        max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
+        start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
+        end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
+
 # --- MAIN PAGE CHATBOT UI ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
