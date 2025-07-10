@@ -219,18 +219,60 @@ if customer_need.strip():
                 st.markdown(f"[Preview Video]({video_url})")
             st.markdown("</div>", unsafe_allow_html=True)
 
-# --- SIMPLE SIDEBAR CHATBOT UI ---
+# --- CONSOLIDATED, PROMINENT SIDEBAR CHATBOT ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🤖 Chatbot Assistant")
+st.sidebar.markdown("""
+<style>
+.big-chatbot-card {
+    background: linear-gradient(135deg, #232946 80%, #1E90FF 100%);
+    border-radius: 1.5em;
+    padding: 2.2em 1.2em 1.5em 1.2em;
+    margin-bottom: 2em;
+    box-shadow: 0 4px 24px 0 rgba(30,144,255,0.13);
+    border: 2px solid #22263a;
+}
+.big-chatbot-title {
+    font-size: 2.1em;
+    font-weight: 900;
+    color: #FFD700;
+    margin-bottom: 0.5em;
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    letter-spacing: 1px;
+}
+.big-chatbot-input input {
+    font-size: 1.3em !important;
+    padding: 1.1em 1.2em !important;
+    border-radius: 1em !important;
+    margin-bottom: 1.2em !important;
+}
+.big-chatbot-response {
+    color: #fff;
+    font-size: 1.18em;
+    background: #232946;
+    border-radius: 1em;
+    padding: 1em 1.2em;
+    margin-bottom: 0.7em;
+    word-break: break-word;
+}
+</style>
+<div class='big-chatbot-card'>
+    <div class='big-chatbot-title'>🤖 InstaDemo Chatbot</div>
+    <div style='font-size:1.1em; color:#fff; margin-bottom:1em;'>
+        Enter a client issue (e.g. <b>"supply chain issues"</b>) or ask a question about B2B AI demos. The AI will find the most relevant demo(s) or answer your question using the database.
+    </div>
+""", unsafe_allow_html=True)
 
 chat_input = st.sidebar.text_input(
-    "Ask the AI a question about B2B AI demos:",
+    "Describe a client issue or ask a question:",
     key="chat_input",
-    placeholder="E.g. What is a good demo for insurance fraud detection?"
+    placeholder="E.g. supply chain issues or What is a good demo for insurance fraud detection?",
+    label_visibility="collapsed"
 )
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
 
 if chat_input.strip():
     with st.spinner('AI is thinking...'):
@@ -243,20 +285,14 @@ if chat_input.strip():
                 sheet_summary = "(Spreadsheet data unavailable)"
             system_prompt = (
                 "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
-                "Always answer the user's question directly and concisely first. "
-                "Then, provide additional relevant information from the demo database. "
-                "If you mention a demo, always include its link. "
-                "You have access to a database of past demos in CSV format. "
-                "For every user question, use only the information in the provided database to answer. "
+                "If the user input is a client problem or issue (e.g. 'supply chain issues'), find and recommend the most relevant demo(s) from the database, always including the demo link. "
+                "If the user input is a general question, answer it using only the information in the demo database, and include demo links if relevant. "
                 "If the answer is not in the data, say so. "
-                "Be concise, accurate, and helpful. "
                 "Never hallucinate or make up demos. "
-                "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
-                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
-                "If the user asks for a summary, provide a brief overview based on the data. "
+                "Be concise, accurate, and helpful. "
                 "Here is the demo database (CSV):\n" + sheet_summary
             )
-            prompt = f"User question: {chat_input}"
+            prompt = f"User input: {chat_input}"
             import openai
             openai.api_key = openai_api_key
             response = openai.chat.completions.create(
@@ -273,11 +309,12 @@ if chat_input.strip():
             st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
 
 if st.session_state['chat_history']:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("#### Conversation History")
+    st.sidebar.markdown("<div class='big-chatbot-card'>", unsafe_allow_html=True)
+    st.sidebar.markdown("<b style='font-size:1.2em;'>Recent Chat</b>", unsafe_allow_html=True)
     for user, bot in st.session_state['chat_history'][-5:]:
-        st.sidebar.markdown(f"**You:** {user}")
-        st.sidebar.markdown(f"**AI:** {bot}")
+        st.sidebar.markdown(f"<div class='big-chatbot-response'><b>You:</b> {user}</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div class='big-chatbot-response'><b>AI:</b> {bot}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown("</div>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
