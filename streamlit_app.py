@@ -56,12 +56,6 @@ if not openai_api_key:
     st.error("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
     st.stop()
 
-# Select matcher type
-matcher_type = st.sidebar.selectbox(
-    "Select Matching Engine",
-    ("Local Embedding", "OpenAI Embedding", "OpenAI GPT-4o Reasoning")
-)
-
 # Input box
 customer_need = st.text_area(
     "Enter the client's need/problem:",
@@ -77,21 +71,8 @@ if st.button("Find Matches"):
         st.warning("Please enter a client need/problem.")
     else:
         try:
-            if matcher_type == "Local Embedding":
-                matcher = DemoMatcher(SPREADSHEET_PATH, MATCH_COLUMNS)
-                results = matcher.find_similar_demos(customer_need, top_k=top_k)
-            elif matcher_type == "OpenAI Embedding":
-                if not openai_api_key:
-                    st.error("OpenAI API key not found. Please set it in Streamlit secrets or .env.")
-                    st.stop()
-                matcher = OpenAIDemoMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
-                results = matcher.find_similar_demos(customer_need, top_k=top_k)
-            else:  # OpenAI GPT-4o Reasoning
-                if not openai_api_key:
-                    st.error("OpenAI API key not found. Please set it in Streamlit secrets or .env.")
-                    st.stop()
-                matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
-                results = matcher.find_best_demos(customer_need, top_k=top_k)
+            matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
+            results = matcher.find_best_demos(customer_need, top_k=top_k)
         except Exception as e:
             st.error(f"Error: {e}")
             st.stop()
@@ -102,7 +83,7 @@ if st.button("Find Matches"):
             st.subheader("Top Matches:")
             for res in results:
                 demo = res.get('demo_info', {})
-                # Only show the requested fields
+                # Only show the requested fields, word-for-word from the CSV
                 fields_to_show = [
                     (COMPANY_COL, 'Company Name'),
                     ('Date Uploaded', 'Date Uploaded'),
@@ -119,13 +100,6 @@ if st.button("Find Matches"):
                     elif value:
                         st.write(f"**{label}:** {value}")
                 st.markdown("---")
-
-            # Bar chart for embedding-based matchers
-            if matcher_type in ("Local Embedding", "OpenAI Embedding"):
-                import numpy as np
-                scores = [r['similarity_score'] for r in results]
-                companies = [r['demo_info'].get(COMPANY_COL, 'N/A') for r in results]
-                st.bar_chart(pd.DataFrame({'Similarity': scores}, index=companies))
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by Instalily AI. Secure & ready for Streamlit Community Cloud.")
