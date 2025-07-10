@@ -185,80 +185,102 @@ if not openai_api_key:
 # Input box and custom send button
 from streamlit.components.v1 import html
 
-with st.form(key="search_form", clear_on_submit=False):
-    # Container for relative positioning
-    st.markdown('''
-    <style>
-    .input-container {
-        position: relative;
-        width: 100%;
-        margin-bottom: 1.5em;
-    }
-    .send-btn-abs {
-        position: absolute;
-        right: 12px;
-        bottom: 12px;
-        background: #888;
-        border: none;
-        border-radius: 50%;
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: not-allowed;
-        transition: background 0.2s;
-        padding: 0;
-        z-index: 2;
-    }
-    .send-btn-abs.enabled {
-        background: #22263a;
-        cursor: pointer;
-    }
-    .send-btn-abs.enabled:hover {
-        background: #1E90FF;
-    }
-    .send-arrow-up {
-        width: 28px;
-        height: 28px;
-        display: block;
-    }
-    .send-arrow-up.disabled path {
-        stroke: #ccc;
-    }
-    .send-arrow-up.enabled path {
-        stroke: #22263a;
-    }
-    </style>
-    <div class="input-container">
-    ''', unsafe_allow_html=True)
-    customer_need = st.text_area(
-        "Enter the client's problem:",
-        height=100,
-        key="customer_need",
-        help="Type your client's need and press Enter or click the arrow to search."
-    )
-    # Determine if button should be enabled
-    btn_enabled = bool(customer_need.strip())
-    btn_class = "send-btn-abs enabled" if btn_enabled else "send-btn-abs"
-    arrow_class = "send-arrow-up enabled" if btn_enabled else "send-arrow-up disabled"
-    btn_disabled = "" if btn_enabled else "disabled"
-    # Upward arrow SVG
-    arrow_svg = f'''
-    <svg class="{arrow_class}" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="48" fill="white"/>
-        <path d="M50 70 L50 30 M50 30 L35 45 M50 30 L65 45" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    '''
-    # Button HTML
-    html(f'''
-    <button type="submit" class="{btn_class}" {'disabled' if not btn_enabled else ''}>
-        {arrow_svg}
-    </button>
-    </div>
-    ''', height=80)
-    st.markdown("</div>", unsafe_allow_html=True)
-    submitted = st.form_submit_button(label="", help="Send")
+# --- Custom CSS for button and input container ---
+st.markdown('''
+<style>
+.input-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 1.5em;
+}
+.send-btn-abs {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    background: #888;
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    padding: 0;
+    z-index: 2;
+}
+.send-btn-abs.enabled {
+    background: #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px 0 rgba(30,144,255,0.10);
+}
+.send-btn-abs.enabled:hover {
+    background: #1E90FF;
+}
+.send-arrow-up {
+    width: 28px;
+    height: 28px;
+    display: block;
+}
+.send-arrow-up.disabled path {
+    stroke: #ccc;
+}
+.send-arrow-up.enabled path {
+    stroke: #22263a;
+}
+.send-arrow-up.enabled circle {
+    fill: #fff;
+}
+</style>
+''', unsafe_allow_html=True)
+
+# --- Input and button logic ---
+if 'customer_need' not in st.session_state:
+    st.session_state['customer_need'] = ''
+if 'submitted' not in st.session_state:
+    st.session_state['submitted'] = False
+
+def submit_callback():
+    st.session_state['submitted'] = True
+
+st.markdown('<div class="input-container">', unsafe_allow_html=True)
+customer_need = st.text_area(
+    "Enter the client's problem:",
+    height=100,
+    key="customer_need",
+    help="Type your client's need and press Enter or click the arrow to search."
+)
+btn_enabled = bool(st.session_state['customer_need'].strip())
+btn_class = "send-btn-abs enabled" if btn_enabled else "send-btn-abs"
+arrow_class = "send-arrow-up enabled" if btn_enabled else "send-arrow-up disabled"
+arrow_svg = f'''
+<svg class="{arrow_class}" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="48" fill="#fff"/>
+    <path d="M50 70 L50 30 M50 30 L35 45 M50 30 L65 45" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+'''
+# Render the button as HTML, but use a Streamlit button for actual submission
+html(f'''
+<button id="send-btn" class="{btn_class}" {'disabled' if not btn_enabled else ''} onclick="window.dispatchEvent(new Event('sendDemoSearch'))">
+    {arrow_svg}
+</button>
+''', height=80)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# JS to trigger Streamlit button click on custom button click
+html('''
+<script>
+window.addEventListener('sendDemoSearch', function() {
+    const streamlitBtn = window.parent.document.querySelector('button[kind="secondary"]');
+    if (streamlitBtn) streamlitBtn.click();
+});
+</script>
+''')
+
+# Hidden Streamlit button for submission
+if st.button("", key="hidden_submit_btn", help="Send", on_click=submit_callback, disabled=not btn_enabled):
+    pass
+submitted = st.session_state['submitted']
 
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
