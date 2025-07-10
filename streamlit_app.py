@@ -144,6 +144,103 @@ if df_full is not None:
         start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
         end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
+# --- PROMINENT SIDEBAR CHATBOT UI ---
+st.sidebar.markdown("""
+<style>
+.chatbot-card {
+    background: linear-gradient(135deg, #232946 80%, #1E90FF 100%);
+    border-radius: 1.2em;
+    padding: 1.5em 1em 1em 1em;
+    margin-bottom: 1.5em;
+    box-shadow: 0 2px 16px 0 rgba(30,144,255,0.10);
+    border: 1px solid #22263a;
+}
+.chatbot-title {
+    font-size: 1.5em;
+    font-weight: 800;
+    color: #FFD700;
+    margin-bottom: 0.2em;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+.chatbot-input input {
+    font-size: 1.1em !important;
+    padding: 0.7em 1em !important;
+    border-radius: 0.7em !important;
+}
+.chatbot-response {
+    color: #fff;
+    font-size: 1.05em;
+    background: #232946;
+    border-radius: 0.7em;
+    padding: 0.7em 1em;
+    margin-bottom: 0.5em;
+}
+</style>
+<div class='chatbot-card'>
+    <div class='chatbot-title'>🤖 InstaDemo Chatbot</div>
+""", unsafe_allow_html=True)
+
+chat_input = st.sidebar.text_input(
+    "Ask the AI a question about B2B AI demos:",
+    key="chat_input",
+    placeholder="E.g. What is a good demo for insurance fraud detection?",
+    label_visibility="collapsed"
+)
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
+
+if chat_input.strip():
+    with st.spinner('AI is thinking...'):
+        try:
+            if df_full is not None:
+                preview_cols = [col for col in df_full.columns if col not in (None, '')]
+                preview_df = df_full[preview_cols].head(20)
+                sheet_summary = preview_df.to_csv(index=False)
+            else:
+                sheet_summary = "(Spreadsheet data unavailable)"
+            system_prompt = (
+                "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
+                "Always answer the user's question directly and concisely first. "
+                "Then, provide additional relevant information from the demo database. "
+                "If you mention a demo, always include its link. "
+                "You have access to a database of past demos in CSV format. "
+                "For every user question, use only the information in the provided database to answer. "
+                "If the answer is not in the data, say so. "
+                "Be concise, accurate, and helpful. "
+                "Never hallucinate or make up demos. "
+                "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
+                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
+                "If the user asks for a summary, provide a brief overview based on the data. "
+                "Here is the demo database (CSV):\n" + sheet_summary
+            )
+            prompt = f"User question: {chat_input}"
+            import openai
+            openai.api_key = openai_api_key
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=400
+            )
+            content = response.choices[0].message.content
+            answer = content.strip() if content else "(No response from AI)"
+            st.session_state['chat_history'].append((chat_input, answer))
+        except Exception as e:
+            st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+
+if st.session_state['chat_history']:
+    st.sidebar.markdown("<div class='chatbot-card'>", unsafe_allow_html=True)
+    st.sidebar.markdown("<b>Recent Chat</b>", unsafe_allow_html=True)
+    for user, bot in st.session_state['chat_history'][-5:]:
+        st.sidebar.markdown(f"<div class='chatbot-response'><b>You:</b> {user}</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div class='chatbot-response'><b>AI:</b> {bot}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown("</div>", unsafe_allow_html=True)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
+
 # --- MAIN SEARCH AND MATCHING ---
 if customer_need.strip():
     if not isinstance(openai_api_key, str) or not openai_api_key:
@@ -218,66 +315,3 @@ if customer_need.strip():
             elif video_url and video_url.startswith('http'):
                 st.markdown(f"[Preview Video]({video_url})")
             st.markdown("</div>", unsafe_allow_html=True)
-
-# --- SIMPLE SIDEBAR CHATBOT UI ---
-if 'chat_history' not in st.session_state:
-    st.session_state['chat_history'] = []
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🤖 Chatbot Assistant")
-
-chat_input = st.sidebar.text_input(
-    "Ask the AI a question about B2B AI demos:",
-    key="chat_input",
-    placeholder="E.g. What is a good demo for insurance fraud detection?"
-)
-
-if chat_input.strip():
-    with st.spinner('AI is thinking...'):
-        try:
-            if df_full is not None:
-                preview_cols = [col for col in df_full.columns if col not in (None, '')]
-                preview_df = df_full[preview_cols].head(20)
-                sheet_summary = preview_df.to_csv(index=False)
-            else:
-                sheet_summary = "(Spreadsheet data unavailable)"
-            system_prompt = (
-                "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
-                "Always answer the user's question directly and concisely first. "
-                "Then, provide additional relevant information from the demo database. "
-                "If you mention a demo, always include its link. "
-                "You have access to a database of past demos in CSV format. "
-                "For every user question, use only the information in the provided database to answer. "
-                "If the answer is not in the data, say so. "
-                "Be concise, accurate, and helpful. "
-                "Never hallucinate or make up demos. "
-                "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
-                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
-                "If the user asks for a summary, provide a brief overview based on the data. "
-                "Here is the demo database (CSV):\n" + sheet_summary
-            )
-            prompt = f"User question: {chat_input}"
-            import openai
-            openai.api_key = openai_api_key
-            response = openai.chat.completions.create(
-                model="gpt-4o",
-                messages=[{"role": "system", "content": system_prompt},
-                         {"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=400
-            )
-            content = response.choices[0].message.content
-            answer = content.strip() if content else "(No response from AI)"
-            st.session_state['chat_history'].append((chat_input, answer))
-        except Exception as e:
-            st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
-
-if st.session_state['chat_history']:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("#### Conversation History")
-    for user, bot in st.session_state['chat_history'][-5:]:
-        st.sidebar.markdown(f"**You:** {user}")
-        st.sidebar.markdown(f"**AI:** {bot}")
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
