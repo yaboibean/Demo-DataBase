@@ -33,15 +33,16 @@ class DemoMatcher:
         Returns:
             np.ndarray of demo embeddings.
         """
+        # Only embed the 'Client Problem' column for matching
         demo_texts = []
         for _, row in self.demos_df.iterrows():
-            text_parts = [str(row[col]) for col in self.match_columns if col in row and pd.notna(row[col])]
-            demo_texts.append(" | ".join(text_parts))
+            text = str(row['Client Problem']) if 'Client Problem' in row and pd.notna(row['Client Problem']) else ''
+            demo_texts.append(text)
         if not demo_texts:
             raise ValueError("No demo texts found for embedding.")
         return self.model.encode(demo_texts, show_progress_bar=False)
 
-    def find_similar_demos(self, customer_need: str, top_k: int = 5, min_score: float = 0.3) -> List[Dict[str, Any]]:
+    def find_similar_demos(self, customer_need: str, top_k: int = 2, min_score: float = 0.3) -> List[Dict[str, Any]]:
         """
         Find the most similar demos to a customer need.
         Args:
@@ -53,6 +54,7 @@ class DemoMatcher:
         """
         if not customer_need or not isinstance(customer_need, str):
             raise ValueError("customer_need must be a non-empty string.")
+        # Only embed the user input for matching against 'Client Problem'
         need_embedding = self.model.encode([customer_need])[0].reshape(1, -1)
         similarities = cosine_similarity(need_embedding, self.demo_embeddings)[0]
         top_indices = np.argsort(similarities)[::-1]
@@ -71,7 +73,7 @@ class DemoMatcher:
                 break
         return results
     
-    def get_detailed_analysis(self, customer_need: str, top_k: int = 5) -> str:
+    def get_detailed_analysis(self, customer_need: str, top_k: int = 2) -> str:
         """
         Get a detailed analysis of the most similar demos
         
