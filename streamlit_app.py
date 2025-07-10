@@ -91,12 +91,13 @@ if st.button("Find Matches"):
             st.subheader("Top Matches:")
             for res in results:
                 demo = res.get('demo_info', {})
-                # Show the new required fields at the top
-                st.markdown(f"**Similarity Score:** {res.get('similarity_score', 'N/A')}")
-                st.markdown(f"**Reason:** {res.get('explanation', 'N/A')}")
+                st.markdown(f"**{res.get('rank', '')}. {demo.get(COMPANY_COL, 'N/A')}**")
+                # Show the new required fields at the top, styled for visibility
+                st.markdown(f"<span style='color:#FFD700'><b>Similarity Score:</b> {res.get('similarity_score', 'N/A'):.3f}</span>", unsafe_allow_html=True)
+                st.markdown(f"<span style='color:#00FFAA'><b>Reason:</b> {res.get('explanation', 'N/A')}</span>", unsafe_allow_html=True)
                 demo_link = res.get('demo_link')
                 if demo_link:
-                    st.markdown(f"**Demo Link:** [Click here]({demo_link})")
+                    st.markdown(f"<span style='color:#1E90FF'><b>Demo Link:</b> <a href='{demo_link}' target='_blank'>Click here</a></span>", unsafe_allow_html=True)
                 # Only show the requested fields, word-for-word from the CSV
                 fields_to_show = [
                     (COMPANY_COL, 'Company Name'),
@@ -106,7 +107,6 @@ if st.button("Find Matches"):
                     ('Benefit to Client', 'Benefit to Client'),
                     (VIDEO_LINK_COL, 'Demo Link'),
                 ]
-                st.markdown(f"**{res.get('rank', '')}. {demo.get(COMPANY_COL, 'N/A')}**")
                 for col, label in fields_to_show:
                     value = demo.get(col, '')
                     if col == VIDEO_LINK_COL and value:
