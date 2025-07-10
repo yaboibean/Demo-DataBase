@@ -272,9 +272,77 @@ if st.session_state.get('expand_chat', False):
         st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 else:
-    # --- TWO COLUMN LAYOUT: SEARCH + CHATBOT (SIDEBAR) ---
-    col_search, col_chat = st.columns([2, 1], gap="large")
-    with col_search:
+    # --- 80:20 LAYOUT: LEFT (CHATBOT + FILTERS), RIGHT (SEARCH/RESULTS) ---
+    col_left, col_right = st.columns([1, 4], gap="large")
+    with col_left:
+        # --- CHATBOT AT TOP OF LEFT COLUMN ---
+        st.markdown("### 🤖 Chatbot Assistant")
+        chat_input = st.text_input(
+            "Ask the AI a question about B2B AI demos:",
+            key="chat_input_sidebar",
+            placeholder="E.g. What is a good demo for insurance fraud detection?"
+        )
+        if chat_input.strip():
+            st.session_state['expand_chat'] = True
+            with st.spinner('AI is thinking...'):
+                try:
+                    if df_full is not None:
+                        preview_cols = [col for col in df_full.columns if col not in (None, '')]
+                        preview_df = df_full[preview_cols].head(20)
+                        sheet_summary = preview_df.to_csv(index=False)
+                    else:
+                        sheet_summary = "(Spreadsheet data unavailable)"
+                    system_prompt = (
+                        "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
+                        "Always answer the user's question directly and concisely first. "
+                        "Then, provide additional relevant information from the demo database. "
+                        "If you mention a demo, always include its link. "
+                        "You have access to a database of past demos in CSV format. "
+                        "For every user question, use only the information in the provided database to answer. "
+                        "If the answer is not in the data, say so. "
+                        "Be concise, accurate, and helpful. "
+                        "Never hallucinate or make up demos. "
+                        "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
+                        "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
+                        "If the user asks for a summary, provide a brief overview based on the data. "
+                        "Here is the demo database (CSV):\n" + sheet_summary
+                    )
+                    prompt = f"User question: {chat_input}"
+                    import openai
+                    openai.api_key = openai_api_key
+                    response = openai.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[{"role": "system", "content": system_prompt},
+                                 {"role": "user", "content": prompt}],
+                        temperature=0.3,
+                        max_tokens=400
+                    )
+                    content = response.choices[0].message.content
+                    answer = content.strip() if content else "(No response from AI)"
+                    st.session_state['chat_history'].append((chat_input, answer))
+                except Exception as e:
+                    st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+        # --- SHOW CHAT HISTORY (last 6) ---
+        if st.session_state['chat_history']:
+            st.markdown('''<style>.modern-chat-bubble-user{background:#23272f;color:#fff;border-radius:1.2em 1.2em 0.3em 1.2em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-end;max-width:90%;}.modern-chat-bubble-bot{background:#ececf1;color:#222;border-radius:1.2em 1.2em 1.2em 0.3em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-start;max-width:90%;}</style>''', unsafe_allow_html=True)
+            for user, bot in st.session_state['chat_history'][-6:]:
+                st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
+        # --- FILTERS BELOW CHATBOT ---
+        if df_full is not None:
+            st.markdown("---")
+            st.markdown("### Filter Demos")
+            for label, col in FILTER_COLS:
+                if col in df_full.columns:
+                    options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
+                    selected = st.selectbox(f"{label}", options, key=f"filter_{col}")
+                    selected_filters[col] = selected
+            if "Date Uploaded" in df_full.columns:
+                min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
+                max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
+                start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
+                end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
+    with col_right:
         # --- MAIN SEARCH AND MATCHING ---
         if customer_need.strip():
             if not isinstance(openai_api_key, str) or not openai_api_key:
@@ -287,7 +355,6 @@ else:
                 except Exception as e:
                     st.error(f"Error: {e}")
                     st.stop()
-
             # --- APPLY FILTERS TO RESULTS ---
             if df_full is not None:
                 filtered = []
@@ -333,53 +400,3 @@ else:
                     elif video_url and video_url.startswith('http'):
                         st.markdown(f"[Preview Video]({video_url})")
                     st.markdown("</div>", unsafe_allow_html=True)
-    with col_chat:
-        # Sidebar chatbot input and chat history
-        if show_sidebar_chat:
-            st.sidebar.markdown("---")
-            st.sidebar.markdown("### 🤖 Chatbot Assistant")
-            chat_input = st.sidebar.text_input(
-                "Ask the AI a question about B2B AI demos:",
-                key="chat_input_sidebar",
-                placeholder="E.g. What is a good demo for insurance fraud detection?"
-            )
-            if chat_input.strip():
-                st.session_state['expand_chat'] = True
-                with st.spinner('AI is thinking...'):
-                    try:
-                        if df_full is not None:
-                            preview_cols = [col for col in df_full.columns if col not in (None, '')]
-                            preview_df = df_full[preview_cols].head(20)
-                            sheet_summary = preview_df.to_csv(index=False)
-                        else:
-                            sheet_summary = "(Spreadsheet data unavailable)"
-                        system_prompt = (
-                            "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
-                            "Always answer the user's question directly and concisely first. "
-                            "Then, provide additional relevant information from the demo database. "
-                            "If you mention a demo, always include its link. "
-                            "You have access to a database of past demos in CSV format. "
-                            "For every user question, use only the information in the provided database to answer. "
-                            "If the answer is not in the data, say so. "
-                            "Be concise, accurate, and helpful. "
-                            "Never hallucinate or make up demos. "
-                            "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
-                            "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
-                            "If the user asks for a summary, provide a brief overview based on the data. "
-                            "Here is the demo database (CSV):\n" + sheet_summary
-                        )
-                        prompt = f"User question: {chat_input}"
-                        import openai
-                        openai.api_key = openai_api_key
-                        response = openai.chat.completions.create(
-                            model="gpt-4o",
-                            messages=[{"role": "system", "content": system_prompt},
-                                     {"role": "user", "content": prompt}],
-                            temperature=0.3,
-                            max_tokens=400
-                        )
-                        content = response.choices[0].message.content
-                        answer = content.strip() if content else "(No response from AI)"
-                        st.session_state['chat_history'].append((chat_input, answer))
-                    except Exception as e:
-                        st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
