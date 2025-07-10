@@ -156,15 +156,24 @@ if customer_need.strip():
             st.stop()
 
     # --- APPLY FILTERS TO RESULTS ---
-    if df_full is not None and any(v != "All" for v in selected_filters.values()):
+    if df_full is not None:
         filtered = []
         for res in results:
             demo = res.get('demo_info', {})
             match = True
+            # Industry filter
             for col, val in selected_filters.items():
                 if val != "All" and demo.get(col, None) != val:
                     match = False
                     break
+            # Date Uploaded filter
+            if match and start_date and end_date and "Date Uploaded" in demo:
+                try:
+                    demo_date = pd.to_datetime(demo["Date Uploaded"], errors='coerce').date()
+                    if demo_date < start_date or demo_date > end_date:
+                        match = False
+                except Exception:
+                    match = False
             if match:
                 filtered.append(res)
         results = filtered
