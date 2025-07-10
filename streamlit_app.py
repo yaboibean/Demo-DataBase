@@ -65,7 +65,7 @@ if not openai_api_key:
 
 # Input box
 customer_need = st.text_area(
-    "Enter the client's need/problem:",
+    "Enter the client's problem:",
     height=100
 )
 
