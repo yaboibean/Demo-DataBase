@@ -219,226 +219,65 @@ if customer_need.strip():
                 st.markdown(f"[Preview Video]({video_url})")
             st.markdown("</div>", unsafe_allow_html=True)
 
-# --- ENHANCED CHATBOT/CONVERSATIONAL UI ---
-# Initialize chat history
+# --- SIMPLE SIDEBAR CHATBOT UI ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
-# Add custom CSS for chatbot
-st.markdown("""
-<style>
-.chatbot-container {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    border-radius: 1.5em;
-    padding: 1.5em;
-    margin: 2em 0;
-    box-shadow: 0 8px 32px rgba(30, 60, 114, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.chatbot-title {
-    color: #ffffff;
-    font-size: 1.8em;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 1em;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-.chat-message {
-    margin: 1em 0;
-    padding: 1em 1.2em;
-    border-radius: 1.2em;
-    max-width: 85%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-.user-message {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    margin-left: auto;
-    border-bottom-right-radius: 0.3em;
-}
-.bot-message {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    margin-right: auto;
-    border-bottom-left-radius: 0.3em;
-}
-.chat-input-container {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 1em;
-    padding: 1em;
-    margin-top: 1em;
-}
-.chat-examples {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 0.8em;
-    padding: 1em;
-    margin: 1em 0;
-    border-left: 4px solid #4CAF50;
-}
-.example-questions {
-    color: #e0e0e0;
-    font-size: 0.9em;
-    line-height: 1.6;
-}
-.clear-chat-btn {
-    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-    color: white;
-    border: none;
-    padding: 0.5em 1em;
-    border-radius: 2em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 1em;
-}
-.clear-chat-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
-}
-</style>
-""", unsafe_allow_html=True)
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🤖 Chatbot Assistant")
 
-# Create main chatbot section
-st.markdown("""
-<div class='chatbot-container'>
-    <div class='chatbot-title'>🤖 AI Demo Assistant</div>
-</div>
-""", unsafe_allow_html=True)
-
-# Create two columns for better layout
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    st.markdown("""
-    <div class='chat-examples'>
-        <div class='example-questions'>
-            <strong>💡 Try asking:</strong><br>
-            • "What demos work best for healthcare companies?"<br>
-            • "Show me AI solutions for fraud detection?"<br>
-            • "Which clients have used automation for sales?"<br>
-            • "What are the top benefits mentioned in demos?"
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    if st.button("🗑️ Clear Chat", key="clear_chat"):
-        st.session_state['chat_history'] = []
-        st.rerun()
-
-# Chat input with enhanced styling
-chat_input = st.text_input(
-    "💬 Ask me anything about our B2B AI demos:",
+chat_input = st.sidebar.text_input(
+    "Ask the AI a question about B2B AI demos:",
     key="chat_input",
-    placeholder="Type your question here and press Enter...",
-    help="Ask questions about demos, clients, industries, or AI capabilities"
+    placeholder="E.g. What is a good demo for insurance fraud detection?"
 )
 
-# Enhanced chat input CSS
-st.markdown("""
-<style>
-div[data-testid="stTextInput"] > div > div > input {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 2em;
-    padding: 1em 1.5em;
-    font-size: 1.1em;
-    transition: all 0.3s ease;
-}
-div[data-testid="stTextInput"] > div > div > input:focus {
-    border-color: #4CAF50;
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
-    transform: translateY(-2px);
-}
-div[data-testid="stTextInput"] > div > div > input::placeholder {
-    color: rgba(255, 255, 255, 0.7);
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Process chat input
 if chat_input.strip():
     if chat_input.strip().endswith('?'):
-        with st.spinner('🤔 AI is thinking...'):
+        with st.spinner('AI is thinking...'):
             try:
-                # Prepare a summary of the spreadsheet for the prompt
                 if df_full is not None:
                     preview_cols = [col for col in df_full.columns if col not in (None, '')]
                     preview_df = df_full[preview_cols].head(20)
                     sheet_summary = preview_df.to_csv(index=False)
                 else:
                     sheet_summary = "(Spreadsheet data unavailable)"
-                
                 system_prompt = (
-                    "You are an expert B2B AI demo assistant for Instalily AI. "
+                    "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
                     "You have access to a database of past demos in CSV format. "
-                    "Provide helpful, accurate answers based only on the demo database. "
-                    "Be concise but informative. Use emojis appropriately to make responses engaging. "
-                    "If the answer isn't in the data, say so politely. "
-                    "Focus on being helpful for sales teams looking for the right demo to show prospects. "
-                    f"Demo database:\n{sheet_summary}"
+                    "For every user question, use only the information in the provided database to answer. "
+                    "If the answer is not in the data, say so. "
+                    "Be concise, accurate, and helpful. "
+                    "Never hallucinate or make up demos. "
+                    "If the user asks for a recommendation, suggest demos from the database that best match their question. "
+                    "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database. "
+                    "If the user asks for a summary, provide a brief overview based on the data. "
+                    "Here is the demo database (CSV):\n" + sheet_summary
                 )
-                
                 prompt = f"User question: {chat_input}"
-                
-                # Use the same OpenAI API as the main model
                 import openai
                 openai.api_key = openai_api_key
                 response = openai.chat.completions.create(
                     model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
-                    ],
+                    messages=[{"role": "system", "content": system_prompt},
+                             {"role": "user", "content": prompt}],
                     temperature=0.3,
                     max_tokens=400
                 )
                 content = response.choices[0].message.content
-                answer = content.strip() if content else "🤖 Sorry, I couldn't generate a response."
+                answer = content.strip() if content else "(No response from AI)"
                 st.session_state['chat_history'].append((chat_input, answer))
-                
             except Exception as e:
-                error_msg = f"❌ Sorry, I encountered an error: {str(e)}"
-                st.session_state['chat_history'].append((chat_input, error_msg))
+                st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
     else:
-        st.session_state['chat_history'].append((
-            chat_input, 
-            "❓ Please end your question with a '?' so I know you're asking me something!"
-        ))
+        st.session_state['chat_history'].append((chat_input, "Please enter a question ending with a '?' for the chatbot assistant."))
 
-# Display chat history with enhanced styling
 if st.session_state['chat_history']:
-    st.markdown("### 💬 Conversation History")
-    
-    # Show recent messages (last 6 for better UX)
-    recent_messages = st.session_state['chat_history'][-6:]
-    
-    for i, (user_msg, bot_msg) in enumerate(recent_messages):
-        # User message
-        st.markdown(f"""
-        <div class='chat-message user-message'>
-            <strong>👤 You:</strong> {user_msg}
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Bot message
-        st.markdown(f"""
-        <div class='chat-message bot-message'>
-            <strong>🤖 AI Assistant:</strong> {bot_msg}
-        </div>
-        """, unsafe_allow_html=True)
-
-# Sidebar info
-st.sidebar.markdown("---")
-st.sidebar.markdown("""
-### 🎯 Chat Features
-- **Smart Context**: AI knows about all demos in the database
-- **Industry Insights**: Ask about specific sectors
-- **Demo Recommendations**: Get tailored suggestions
-- **Real Data**: Answers based on actual demo history
-""")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("#### Conversation History")
+    for user, bot in st.session_state['chat_history'][-5:]:
+        st.sidebar.markdown(f"**You:** {user}")
+        st.sidebar.markdown(f"**AI:** {bot}")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("🚀 **Developed by Instalily AI**")
-st.sidebar.markdown("✅ Secure & Cloud-Ready")
+st.sidebar.markdown("Developed by Instalily AI. Secure & ready for Streamlit Community Cloud.")
