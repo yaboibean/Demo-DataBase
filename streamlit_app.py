@@ -146,18 +146,25 @@ if customer_need.strip():
         st.subheader("")
         for res in results:
             demo = res.get('demo_info', {})
-            st.markdown(f"<div class='result-card'>", unsafe_allow_html=True)
-            st.markdown(f"<h3 style='margin-bottom:0.2em'>{demo.get(COMPANY_COL, 'N/A')}</h3>", unsafe_allow_html=True)
-            demo_link = res.get('demo_link')
-            if demo_link:
-                st.markdown(f"<div class='demo-link'><b>Demo Link:</b> <a href='{demo_link}' target='_blank'>Click here</a></div>", unsafe_allow_html=True)
-            st.markdown(f"<span class='field-label'>Date Uploaded:</span> {demo.get('Date Uploaded', 'N/A')}", unsafe_allow_html=True)
-            st.markdown(f"<span class='score'>⭐ Similarity Score: {res.get('similarity_score', 'N/A'):.3f}</span>", unsafe_allow_html=True)
-            st.markdown(f"<div class='reason'><b>Reason:</b> {res.get('explanation', 'N/A')}</div>", unsafe_allow_html=True)
-            st.markdown(f"<span class='field-label'>Client Problem:</span> {demo.get('Client Problem', '')}", unsafe_allow_html=True)
-            st.markdown(f"<span class='field-label'>Instalily AI Capabilities:</span> {demo.get('Instalily AI Capabilities', '')}", unsafe_allow_html=True)
-            st.markdown(f"<span class='field-label'>Benefit to Client:</span> {demo.get('Benefit to Client', '')}", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Use only Markdown, no HTML tags, for robust Streamlit card rendering
+            card_md = f"""
+**{demo.get(COMPANY_COL, 'N/A')}**
+
+[Demo Link: Click here]({res.get('demo_link')})
+
+**Date Uploaded:** {demo.get('Date Uploaded', 'N/A')}
+
+**⭐ Similarity Score:** {res.get('similarity_score', 'N/A'):.3f}
+
+**Reason:** <span style='color:#00FFAA'>{res.get('explanation', 'N/A')}</span>
+
+**Client Problem:** {demo.get('Client Problem', '')}
+
+**Instalily AI Capabilities:** {demo.get('Instalily AI Capabilities', '')}
+
+**Benefit to Client:** {demo.get('Benefit to Client', '')}
+"""
+            st.markdown(card_md, unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by Instalily AI. Secure & ready for Streamlit Community Cloud.")
