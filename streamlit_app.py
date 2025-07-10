@@ -135,14 +135,14 @@ if df_full is not None:
     for label, col in FILTER_COLS:
         if col in df_full.columns:
             options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
-            selected = st.sidebar.selectbox(f"{label}", options, key=f"filter_sidebar_{col}")
+            selected = st.sidebar.selectbox(f"{label}", options, key=f"filter_sidebar_{col}_only")
             selected_filters[col] = selected
     # Date Uploaded range filter
     if "Date Uploaded" in df_full.columns:
         min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
         max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
-        start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date_sidebar")
-        end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date_sidebar")
+        start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date_sidebar_only")
+        end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date_sidebar_only")
 
 # --- SIDEBAR: 20% WIDTH, CONTAINS CHATBOT + FILTERS ---
 with st.sidebar:
@@ -205,13 +205,13 @@ with st.sidebar:
         for label, col in FILTER_COLS:
             if col in df_full.columns:
                 options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
-                selected = st.selectbox(f"{label}", options, key=f"filter_sidebar_{col}")
+                selected = st.selectbox(f"{label}", options, key=f"filter_sidebar_{col}_only")
                 selected_filters[col] = selected
         if "Date Uploaded" in df_full.columns:
             min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
             max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
-            start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date_sidebar")
-            end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date_sidebar")
+            start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date_sidebar_only")
+            end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date_sidebar_only")
 
 # --- Ensure chat_history is always initialized (move to very top) ---
 if 'chat_history' not in st.session_state:
