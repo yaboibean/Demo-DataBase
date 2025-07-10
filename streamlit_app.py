@@ -102,21 +102,22 @@ if st.button("Find Matches"):
             st.subheader("Top Matches:")
             for res in results:
                 demo = res.get('demo_info', {})
-                company = demo.get(COMPANY_COL, 'N/A')
-                video_link = demo.get(VIDEO_LINK_COL, '')
-                similarity = res.get('similarity_score', None)
-                explanation = res.get('explanation', None)
-                st.markdown(f"**{res.get('rank', '')}. {company}**")
-                if similarity is not None:
-                    st.write(f"Similarity Score: {similarity:.2f}")
-                if explanation:
-                    st.write(f"Reason: {explanation}")
-                if video_link:
-                    st.markdown(f"[Watch Video]({video_link})")
-                # Show all key fields
-                for k, v in demo.items():
-                    if k not in (COMPANY_COL, VIDEO_LINK_COL):
-                        st.write(f"**{k}:** {v}")
+                # Only show the requested fields
+                fields_to_show = [
+                    (COMPANY_COL, 'Company Name'),
+                    ('Date Uploaded', 'Date Uploaded'),
+                    ('Client Problem', 'Client Problem'),
+                    ('Instalily AI Capabilities', 'Instalily AI Capabilities'),
+                    ('Benefit to Client', 'Benefit to Client'),
+                    (VIDEO_LINK_COL, 'Demo Link'),
+                ]
+                st.markdown(f"**{res.get('rank', '')}. {demo.get(COMPANY_COL, 'N/A')}**")
+                for col, label in fields_to_show:
+                    value = demo.get(col, '')
+                    if col == VIDEO_LINK_COL and value:
+                        st.markdown(f"**{label}:** [Link]({value})")
+                    elif value:
+                        st.write(f"**{label}:** {value}")
                 st.markdown("---")
 
             # Bar chart for embedding-based matchers
