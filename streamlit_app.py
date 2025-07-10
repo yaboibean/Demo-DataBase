@@ -144,6 +144,62 @@ if df_full is not None:
         start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
         end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
+# --- CHATBOT: SIDEBAR INPUT, MAIN PANEL EXPANSION ---
+if 'chat_history' not in st.session_state:
+    st.session_state['chat_history'] = []
+
+# Sidebar chatbot input
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🤖 Chatbot Assistant")
+chat_input = st.sidebar.text_input(
+    "Ask the AI a question about B2B AI demos:",
+    key="chat_input_sidebar",
+    placeholder="E.g. What is a good demo for insurance fraud detection?"
+)
+
+# If user sends a message, process it and expand chat to main area
+expand_chat = False
+if chat_input.strip():
+    expand_chat = True
+    with st.spinner('AI is thinking...'):
+        try:
+            if df_full is not None:
+                preview_cols = [col for col in df_full.columns if col not in (None, '')]
+                preview_df = df_full[preview_cols].head(20)
+                sheet_summary = preview_df.to_csv(index=False)
+            else:
+                sheet_summary = "(Spreadsheet data unavailable)"
+            system_prompt = (
+                "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
+                "Always answer the user's question directly and concisely first. "
+                "Then, provide additional relevant information from the demo database. "
+                "If you mention a demo, always include its link. "
+                "You have access to a database of past demos in CSV format. "
+                "For every user question, use only the information in the provided database to answer. "
+                "If the answer is not in the data, say so. "
+                "Be concise, accurate, and helpful. "
+                "Never hallucinate or make up demos. "
+                "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
+                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
+                "If the user asks for a summary, provide a brief overview based on the data. "
+                "Here is the demo database (CSV):\n" + sheet_summary
+            )
+            prompt = f"User question: {chat_input}"
+            import openai
+            openai.api_key = openai_api_key
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=400
+            )
+            content = response.choices[0].message.content
+            answer = content.strip() if content else "(No response from AI)"
+            st.session_state['chat_history'].append((chat_input, answer))
+        except Exception as e:
+            st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+
 # --- MODERN DYNAMIC LAYOUT: MAIN AREA SPLIT ---
 col_search, col_chat = st.columns([2, 1], gap="large")
 
@@ -209,110 +265,64 @@ with col_search:
                 st.markdown("</div>", unsafe_allow_html=True)
 
 with col_chat:
-    # --- MODERN CHATBOT PANEL ---
-    st.markdown('''
-    <style>
-    .modern-chat-panel {
-        background: #181c2b;
-        border-radius: 1.2em;
-        padding: 1.2em 1.2em 0.5em 1.2em;
-        min-height: 500px;
-        max-height: 70vh;
-        overflow-y: auto;
-        box-shadow: 0 2px 16px 0 rgba(30,144,255,0.10);
-        border: 1px solid #22263a;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-    }
-    .modern-chat-bubble-user {
-        background: #23272f;
-        color: #fff;
-        border-radius: 1.2em 1.2em 0.3em 1.2em;
-        padding: 0.7em 1.1em;
-        margin-bottom: 0.3em;
-        align-self: flex-end;
-        max-width: 90%;
-        animation: fadeIn 0.3s;
-    }
-    .modern-chat-bubble-bot {
-        background: #ececf1;
-        color: #222;
-        border-radius: 1.2em 1.2em 1.2em 0.3em;
-        padding: 0.7em 1.1em;
-        margin-bottom: 0.3em;
-        align-self: flex-start;
-        max-width: 90%;
-        animation: fadeIn 0.3s;
-    }
-    .modern-chat-label {
-        font-size: 0.85em;
-        color: #888;
-        margin-bottom: 0.1em;
-        margin-left: 0.2em;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .modern-chat-input {
-        width: 100%;
-        margin-top: 0.7em;
-        margin-bottom: 0.2em;
-    }
-    </style>
-    ''', unsafe_allow_html=True)
-    st.markdown("<div class='modern-chat-panel'>", unsafe_allow_html=True)
-    if 'chat_history' not in st.session_state:
-        st.session_state['chat_history'] = []
-    for user, bot in st.session_state['chat_history'][-8:]:
-        st.markdown(f"<div class='modern-chat-label'>You</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='modern-chat-label'>AI</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-    chat_input = st.text_input(
-        "Type your question about B2B AI demos...",
-        key="chat_input_main",
-        placeholder="E.g. What is a good demo for insurance fraud detection?",
-        label_visibility="collapsed"
-    )
-    if chat_input.strip():
-        with st.spinner('AI is thinking...'):
-            try:
-                if df_full is not None:
-                    preview_cols = [col for col in df_full.columns if col not in (None, '')]
-                    preview_df = df_full[preview_cols].head(20)
-                    sheet_summary = preview_df.to_csv(index=False)
-                else:
-                    sheet_summary = "(Spreadsheet data unavailable)"
-                system_prompt = (
-                    "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
-                    "Always answer the user's question directly and concisely first. "
-                    "Then, provide additional relevant information from the demo database. "
-                    "If you mention a demo, always include its link. "
-                    "You have access to a database of past demos in CSV format. "
-                    "For every user question, use only the information in the provided database to answer. "
-                    "If the answer is not in the data, say so. "
-                    "Be concise, accurate, and helpful. "
-                    "Never hallucinate or make up demos. "
-                    "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
-                    "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
-                    "If the user asks for a summary, provide a brief overview based on the data. "
-                    "Here is the demo database (CSV):\n" + sheet_summary
-                )
-                prompt = f"User question: {chat_input}"
-                import openai
-                openai.api_key = openai_api_key
-                response = openai.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[{"role": "system", "content": system_prompt},
-                             {"role": "user", "content": prompt}],
-                    temperature=0.3,
-                    max_tokens=400
-                )
-                content = response.choices[0].message.content
-                answer = content.strip() if content else "(No response from AI)"
-                st.session_state['chat_history'].append((chat_input, answer))
-            except Exception as e:
-                st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+    # If chat has been expanded, show the chat panel in main area
+    if expand_chat or st.session_state['chat_history']:
+        st.markdown('''
+        <style>
+        .modern-chat-panel {
+            background: #181c2b;
+            border-radius: 1.2em;
+            padding: 1.2em 1.2em 0.5em 1.2em;
+            min-height: 500px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 2px 16px 0 rgba(30,144,255,0.10);
+            border: 1px solid #22263a;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        .modern-chat-bubble-user {
+            background: #23272f;
+            color: #fff;
+            border-radius: 1.2em 1.2em 0.3em 1.2em;
+            padding: 0.7em 1.1em;
+            margin-bottom: 0.3em;
+            align-self: flex-end;
+            max-width: 90%;
+            animation: fadeIn 0.3s;
+        }
+        .modern-chat-bubble-bot {
+            background: #ececf1;
+            color: #222;
+            border-radius: 1.2em 1.2em 1.2em 0.3em;
+            padding: 0.7em 1.1em;
+            margin-bottom: 0.3em;
+            align-self: flex-start;
+            max-width: 90%;
+            animation: fadeIn 0.3s;
+        }
+        .modern-chat-label {
+            font-size: 0.85em;
+            color: #888;
+            margin-bottom: 0.1em;
+            margin-left: 0.2em;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modern-chat-input {
+            width: 100%;
+            margin-top: 0.7em;
+            margin-bottom: 0.2em;
+        }
+        </style>
+        ''', unsafe_allow_html=True)
+        st.markdown("<div class='modern-chat-panel'>", unsafe_allow_html=True)
+        for user, bot in st.session_state['chat_history'][-8:]:
+            st.markdown(f"<div class='modern-chat-label'>You</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='modern-chat-label'>AI</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
