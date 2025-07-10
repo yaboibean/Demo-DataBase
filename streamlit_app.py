@@ -109,11 +109,9 @@ if not openai_api_key:
     st.stop()
 
 # Input box
-customer_need = st.text_area(
+customer_need = st.text_input(
     "Enter the client's problem:",
-    height=100,
     key="customer_need",
-    on_change=None,
     help="Type your client's need and press Enter to search."
 )
 
