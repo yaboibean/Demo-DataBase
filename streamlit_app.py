@@ -100,9 +100,7 @@ except Exception as e:
 # --- SIDEBAR FILTERS ---
 st.sidebar.markdown("### Filter Demos")
 # Number of results
-if 'top_k' not in st.session_state:
-    st.session_state['top_k'] = 2
-st.sidebar.slider("Number of top matches", 1, 10, st.session_state['top_k'], key="top_k")
+st.sidebar.slider("Number of top matches", 1, 10, 2, key="top_k")
 
 # Only keep Industry and Date Uploaded filters
 FILTER_COLS = [
