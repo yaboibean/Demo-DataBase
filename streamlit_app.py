@@ -335,13 +335,13 @@ else:
             for label, col in FILTER_COLS:
                 if col in df_full.columns:
                     options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
-                    selected = st.selectbox(f"{label}", options, key=f"filter_{col}")
+                    selected = st.selectbox(f"{label}", options, key=f"filter_left_{col}")
                     selected_filters[col] = selected
             if "Date Uploaded" in df_full.columns:
                 min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
                 max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
-                start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
-                end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
+                start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date_left")
+                end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date_left")
     with col_right:
         # --- MAIN SEARCH AND MATCHING ---
         if customer_need.strip():
