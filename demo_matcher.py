@@ -216,17 +216,14 @@ class DemoMatcher:
 
 # Example usage
 if __name__ == "__main__":
-    # Use the real CSV file and relevant columns
+    # Use the real CSV file and only the 'Client Problem' column for matching
     csv_file = "Copy of Master File Demos Database - Demos Database.csv"
-    matcher = DemoMatcher(csv_file, match_columns=["Client Problem", "Instalily AI Capabilities", "Benefit to Client"])
-    
+    matcher = DemoMatcher(csv_file, match_columns=["Client Problem"])
     # Example: Find similar demos for a new customer need
     customer_need = "We need an AI system to help with customer support and handle frequently asked questions"
-    
     print("\n" + "="*50)
     print("DEMO MATCHING SYSTEM")
     print("="*50)
-    
     analysis = matcher.get_detailed_analysis(customer_need, top_k=3)
     print(analysis)
 

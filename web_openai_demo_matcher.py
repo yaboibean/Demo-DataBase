@@ -16,7 +16,8 @@ def get_api_key():
     return key
 
 csv_path = "Copy of Master File Demos Database - Demos Database.csv"
-match_columns = ["Client Problem", "Instalily AI Capabilities", "Benefit to Client"]
+# Only use the 'Client Problem' column for matching
+match_columns = ["Client Problem"]
 
 api_key = get_api_key()
 

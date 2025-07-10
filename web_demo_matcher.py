@@ -11,7 +11,7 @@ st.write("Enter a client problem/need below to find the most similar past demos 
 def get_matcher():
     return DemoMatcher(
         spreadsheet_path="Copy of Master File Demos Database - Demos Database.csv",
-        match_columns=["Client Problem", "Instalily AI Capabilities", "Benefit to Client"]
+        match_columns=["Client Problem"]  # Only use Client Problem for matching
     )
 matcher = get_matcher()
 

@@ -16,7 +16,8 @@ def get_api_key():
     return key
 
 csv_path = "Copy of Master File Demos Database - Demos Database.csv"
-match_columns = ["Client Problem", "Instalily AI Capabilities", "Benefit to Client"]
+# Only use the 'Client Problem' column for matching
+match_columns = ["Client Problem"]
 
 api_key = get_api_key()
 
@@ -41,15 +42,24 @@ if st.button("Find Best Matches (GPT Reasoning)"):
     else:
         with st.spinner("GPT-4o is reasoning about the best matches..."):
             matcher = OpenAIGPTMatcher(csv_path, match_columns, api_key)
-            result = matcher.find_best_match(customer_need, top_k=num_results)
+            # Use the correct method name for GPT-4o matching
+            result = matcher.find_best_demos(customer_need, top_k=num_results)
         st.subheader("GPT-4o Top Matches:")
-        st.markdown(result)
-        # Show video link for only the top matches, matching by company name
-        company_indices = extract_company_names_and_indices(result)
-        df = pd.read_csv(csv_path)
-        for idx, company in company_indices:
-            row = df[df['Name/Client'].astype(str).str.strip() == company]
-            if not row.empty and 'Video Link' in row.columns:
-                video_link = row.iloc[0]['Video Link']
-                if pd.notna(video_link) and str(video_link).strip():
-                    st.markdown(f"**Video Link for {company}:** [{video_link}]({video_link})")
+        # Display results in a readable format
+        import json
+        if isinstance(result, list):
+            for match in result:
+                info = match.get('demo_info', {})
+                score = match.get('similarity_score', 0)
+                rank = match.get('rank', '?')
+                company = info.get('Name/Client', 'Unknown Company')
+                st.markdown(f"### {rank}. {company}")
+                st.markdown(f"**Similarity Score:** {score:.3f}")
+                if 'Client Problem' in info and pd.notna(info['Client Problem']):
+                    st.markdown(f"**Client Problem:** {info['Client Problem']}")
+                video_link = info.get('Video Link')
+                if video_link and pd.notna(video_link):
+                    st.markdown(f"**Video Link:** [{video_link}]({video_link})")
+                st.markdown("---")
+        else:
+            st.markdown(result)
