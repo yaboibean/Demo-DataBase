@@ -97,7 +97,7 @@ try:
 except Exception as e:
     df_full = None
 
-# Remove the top search bar and use only the chatbot input for demo matching and Q&A
+# Remove the old demo search input and related logic
 # --- MAIN PAGE CHATBOT UI ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
