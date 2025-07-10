@@ -99,6 +99,46 @@ st.markdown("""
         gap: 0.5em;
         margin-bottom: 1.5em;
     }
+    .input-container {
+        position: relative;
+        width: 100%;
+        margin-bottom: 1.5em;
+    }
+    .send-btn-abs {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        background: #888;
+        border: none;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: not-allowed;
+        transition: background 0.2s;
+        padding: 0;
+        z-index: 2;
+    }
+    .send-btn-abs.enabled {
+        background: #22263a;
+        cursor: pointer;
+    }
+    .send-btn-abs.enabled:hover {
+        background: #1E90FF;
+    }
+    .send-arrow-up {
+        width: 28px;
+        height: 28px;
+        display: block;
+    }
+    .send-arrow-up.disabled path {
+        stroke: #ccc;
+    }
+    .send-arrow-up.enabled path {
+        stroke: #22263a;
+    }
     </style>
     <div class='main-title'>InstaDemo Search</div>
     <div class='subtitle'>Find the best AI demo for your client's needs</div>
@@ -146,26 +186,77 @@ if not openai_api_key:
 from streamlit.components.v1 import html
 
 with st.form(key="search_form", clear_on_submit=False):
-    st.markdown("<div class='input-row'>", unsafe_allow_html=True)
-    col1, col2 = st.columns([8, 1])
-    with col1:
-        customer_need = st.text_area(
-            "Enter the client's problem:",
-            height=100,
-            key="customer_need",
-            help="Type your client's need and press Enter or click the arrow to search."
-        )
-    with col2:
-        # Custom circular send button with arrow SVG, styled and aligned
-        send_btn_html = '''
-        <button type="submit" class="send-btn" style="background: #22263a; border: none; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;">
-            <svg class="send-arrow" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px;display:block;">
-                <circle cx="50" cy="50" r="48" fill="white"/>
-                <path d="M50 30 L50 70 M50 70 L35 55 M50 70 L65 55" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </button>
-        '''
-        html(send_btn_html, height=60)
+    # Container for relative positioning
+    st.markdown('''
+    <style>
+    .input-container {
+        position: relative;
+        width: 100%;
+        margin-bottom: 1.5em;
+    }
+    .send-btn-abs {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        background: #888;
+        border: none;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: not-allowed;
+        transition: background 0.2s;
+        padding: 0;
+        z-index: 2;
+    }
+    .send-btn-abs.enabled {
+        background: #22263a;
+        cursor: pointer;
+    }
+    .send-btn-abs.enabled:hover {
+        background: #1E90FF;
+    }
+    .send-arrow-up {
+        width: 28px;
+        height: 28px;
+        display: block;
+    }
+    .send-arrow-up.disabled path {
+        stroke: #ccc;
+    }
+    .send-arrow-up.enabled path {
+        stroke: #22263a;
+    }
+    </style>
+    <div class="input-container">
+    ''', unsafe_allow_html=True)
+    customer_need = st.text_area(
+        "Enter the client's problem:",
+        height=100,
+        key="customer_need",
+        help="Type your client's need and press Enter or click the arrow to search."
+    )
+    # Determine if button should be enabled
+    btn_enabled = bool(customer_need.strip())
+    btn_class = "send-btn-abs enabled" if btn_enabled else "send-btn-abs"
+    arrow_class = "send-arrow-up enabled" if btn_enabled else "send-arrow-up disabled"
+    btn_disabled = "" if btn_enabled else "disabled"
+    # Upward arrow SVG
+    arrow_svg = f'''
+    <svg class="{arrow_class}" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="48" fill="white"/>
+        <path d="M50 70 L50 30 M50 30 L35 45 M50 30 L65 45" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    '''
+    # Button HTML
+    html(f'''
+    <button type="submit" class="{btn_class}" {'disabled' if not btn_enabled else ''}>
+        {arrow_svg}
+    </button>
+    </div>
+    ''', height=80)
     st.markdown("</div>", unsafe_allow_html=True)
     submitted = st.form_submit_button(label="", help="Send")
 
