@@ -115,13 +115,14 @@ customer_need = st.text_input(
     help="Type your client's need and press Enter to search.",
     placeholder="Describe your client's problem here...",
 )
-# Add custom CSS to make the input box larger
+# Add custom CSS to make the input box much larger
 st.markdown('''
 <style>
 input#customer_need {
-    height: 3em !important;
-    font-size: 1.2em !important;
-    padding: 1.2em 1em !important;
+    height: 4em !important;
+    font-size: 1.5em !important;
+    padding: 1.8em 1.2em !important;
+    border-radius: 1em !important;
 }
 </style>
 ''', unsafe_allow_html=True)
