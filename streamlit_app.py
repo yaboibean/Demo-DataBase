@@ -144,61 +144,60 @@ if df_full is not None:
         start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
         end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
-# --- CHATBOT: SIDEBAR INPUT, MAIN PANEL EXPANSION WITH SMOOTH TRANSITION ---
+# --- CHATBOT: SIDEBAR INPUT, SLIDE TO MAIN PANEL ON MESSAGE ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
-# Sidebar chatbot input
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🤖 Chatbot Assistant")
-chat_input = st.sidebar.text_input(
-    "Ask the AI a question about B2B AI demos:",
-    key="chat_input_sidebar",
-    placeholder="E.g. What is a good demo for insurance fraud detection?"
-)
-
-# If user sends a message, process it and expand chat to main area
-expand_chat = False
-if chat_input.strip():
-    expand_chat = True
-    with st.spinner('AI is thinking...'):
-        try:
-            if df_full is not None:
-                preview_cols = [col for col in df_full.columns if col not in (None, '')]
-                preview_df = df_full[preview_cols].head(20)
-                sheet_summary = preview_df.to_csv(index=False)
-            else:
-                sheet_summary = "(Spreadsheet data unavailable)"
-            system_prompt = (
-                "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
-                "Always answer the user's question directly and concisely first. "
-                "Then, provide additional relevant information from the demo database. "
-                "If you mention a demo, always include its link. "
-                "You have access to a database of past demos in CSV format. "
-                "For every user question, use only the information in the provided database to answer. "
-                "If the answer is not in the data, say so. "
-                "Be concise, accurate, and helpful. "
-                "Never hallucinate or make up demos. "
-                "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
-                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
-                "If the user asks for a summary, provide a brief overview based on the data. "
-                "Here is the demo database (CSV):\n" + sheet_summary
-            )
-            prompt = f"User question: {chat_input}"
-            import openai
-            openai.api_key = openai_api_key
-            response = openai.chat.completions.create(
-                model="gpt-4o",
-                messages=[{"role": "system", "content": system_prompt},
-                         {"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=400
-            )
-            content = response.choices[0].message.content
-            answer = content.strip() if content else "(No response from AI)"
-            st.session_state['chat_history'].append((chat_input, answer))
-        except Exception as e:
-            st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+# Sidebar chatbot input and chat history
+show_sidebar_chat = not st.session_state['chat_history'] or not st.session_state.get('expand_chat', False)
+if show_sidebar_chat:
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🤖 Chatbot Assistant")
+    chat_input = st.sidebar.text_input(
+        "Ask the AI a question about B2B AI demos:",
+        key="chat_input_sidebar",
+        placeholder="E.g. What is a good demo for insurance fraud detection?"
+    )
+    if chat_input.strip():
+        st.session_state['expand_chat'] = True
+        with st.spinner('AI is thinking...'):
+            try:
+                if df_full is not None:
+                    preview_cols = [col for col in df_full.columns if col not in (None, '')]
+                    preview_df = df_full[preview_cols].head(20)
+                    sheet_summary = preview_df.to_csv(index=False)
+                else:
+                    sheet_summary = "(Spreadsheet data unavailable)"
+                system_prompt = (
+                    "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
+                    "Always answer the user's question directly and concisely first. "
+                    "Then, provide additional relevant information from the demo database. "
+                    "If you mention a demo, always include its link. "
+                    "You have access to a database of past demos in CSV format. "
+                    "For every user question, use only the information in the provided database to answer. "
+                    "If the answer is not in the data, say so. "
+                    "Be concise, accurate, and helpful. "
+                    "Never hallucinate or make up demos. "
+                    "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
+                    "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
+                    "If the user asks for a summary, provide a brief overview based on the data. "
+                    "Here is the demo database (CSV):\n" + sheet_summary
+                )
+                prompt = f"User question: {chat_input}"
+                import openai
+                openai.api_key = openai_api_key
+                response = openai.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[{"role": "system", "content": system_prompt},
+                             {"role": "user", "content": prompt}],
+                    temperature=0.3,
+                    max_tokens=400
+                )
+                content = response.choices[0].message.content
+                answer = content.strip() if content else "(No response from AI)"
+                st.session_state['chat_history'].append((chat_input, answer))
+            except Exception as e:
+                st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
 
 # --- MODERN DYNAMIC LAYOUT: MAIN AREA SPLIT ---
 col_search, col_chat = st.columns([2, 1], gap="large")
@@ -265,8 +264,8 @@ with col_search:
                 st.markdown("</div>", unsafe_allow_html=True)
 
 with col_chat:
-    # If chat has been expanded, show the chat panel in main area
-    if expand_chat or st.session_state['chat_history']:
+    # If chat has been expanded, show the chat panel in main area with slide-in animation
+    if st.session_state.get('expand_chat', False):
         st.markdown('''
         <style>
         .modern-chat-transition {
