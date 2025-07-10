@@ -144,7 +144,7 @@ if df_full is not None:
         start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
         end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
-# --- CHATBOT: SIDEBAR INPUT, MAIN PANEL EXPANSION ---
+# --- CHATBOT: SIDEBAR INPUT, MAIN PANEL EXPANSION WITH SMOOTH TRANSITION ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
@@ -269,6 +269,20 @@ with col_chat:
     if expand_chat or st.session_state['chat_history']:
         st.markdown('''
         <style>
+        .modern-chat-transition {
+            animation: slideInChat 0.6s cubic-bezier(.68,-0.55,.27,1.55) forwards;
+            opacity: 0;
+        }
+        @keyframes slideInChat {
+            from {
+                transform: translateX(-100vw);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
         .modern-chat-panel {
             background: #181c2b;
             border-radius: 1.2em;
@@ -319,7 +333,7 @@ with col_chat:
         }
         </style>
         ''', unsafe_allow_html=True)
-        st.markdown("<div class='modern-chat-panel'>", unsafe_allow_html=True)
+        st.markdown("<div class='modern-chat-panel modern-chat-transition'>", unsafe_allow_html=True)
         for user, bot in st.session_state['chat_history'][-8:]:
             st.markdown(f"<div class='modern-chat-label'>You</div>", unsafe_allow_html=True)
             st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
