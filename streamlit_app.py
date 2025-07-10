@@ -263,12 +263,41 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 🤖 Chatbot Assistant")
 chat_input = st.sidebar.text_input("Ask the AI a question about B2B AI demos:", key="chat_input", placeholder="E.g. What is a good demo for insurance fraud detection?")
 if chat_input.strip():
-    # Only respond if the input is a question (ends with '?')
     if chat_input.strip().endswith('?'):
         try:
-            matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
-            response = matcher.suggest_search_terms(chat_input)
-            st.session_state['chat_history'].append((chat_input, response))
+            # Prepare a summary of the spreadsheet for the prompt (not shown to user)
+            if df_full is not None:
+                # Use all columns, limit to first 20 rows for context
+                preview_cols = [col for col in df_full.columns if col not in (None, '')]
+                preview_df = df_full[preview_cols].head(20)
+                sheet_summary = preview_df.to_csv(index=False)
+            else:
+                sheet_summary = "(Spreadsheet data unavailable)"
+            system_prompt = (
+                "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
+                "You have access to a database of past demos in CSV format. "
+                "For every user question, use only the information in the provided database to answer. "
+                "If the answer is not in the data, say so. "
+                "Be concise, accurate, and helpful. "
+                "Never hallucinate or make up demos. "
+                "If the user asks for a recommendation, suggest demos from the database that best match their question. "
+                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database. "
+                "If the user asks for a summary, provide a brief overview based on the data. "
+                "Here is the demo database (CSV):\n" + sheet_summary
+            )
+            prompt = f"User question: {chat_input}"
+            import openai
+            openai.api_key = openai_api_key
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=400
+            )
+            content = response.choices[0].message.content
+            answer = content.strip() if content else "(No response from AI)"
+            st.session_state['chat_history'].append((chat_input, answer))
         except Exception as e:
             st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
     else:
