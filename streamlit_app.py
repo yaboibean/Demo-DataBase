@@ -146,8 +146,10 @@ if customer_need.strip():
         st.subheader("")
         for res in results:
             demo = res.get('demo_info', {})
-            # Use only Markdown, no HTML tags, for robust Streamlit card rendering
-            card_md = f"""
+            # Use a container with st.markdown for the card, and apply the card CSS class
+            st.markdown(f"""
+<div class='result-card'>
+
 **{demo.get(COMPANY_COL, 'N/A')}**
 
 [Demo Link: Click here]({res.get('demo_link')})
@@ -163,8 +165,9 @@ if customer_need.strip():
 **Instalily AI Capabilities:** {demo.get('Instalily AI Capabilities', '')}
 
 **Benefit to Client:** {demo.get('Benefit to Client', '')}
-"""
-            st.markdown(card_md, unsafe_allow_html=True)
+
+</div>
+""", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by Instalily AI. Secure & ready for Streamlit Community Cloud.")
