@@ -219,19 +219,20 @@ if customer_need.strip():
                 st.markdown(f"[Preview Video]({video_url})")
             st.markdown("</div>", unsafe_allow_html=True)
 
-# --- CONSOLIDATED, PROMINENT SIDEBAR CHATBOT ---
+# --- MAIN PAGE CHATBOT UI ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
-st.sidebar.markdown("""
+st.markdown("""
 <style>
 .big-chatbot-card {
     background: linear-gradient(135deg, #232946 80%, #1E90FF 100%);
     border-radius: 1.5em;
     padding: 2.2em 1.2em 1.5em 1.2em;
-    margin-bottom: 2em;
+    margin: 2.5em auto 2em auto;
     box-shadow: 0 4px 24px 0 rgba(30,144,255,0.13);
     border: 2px solid #22263a;
+    max-width: 700px;
 }
 .big-chatbot-title {
     font-size: 2.1em;
@@ -242,6 +243,7 @@ st.sidebar.markdown("""
     align-items: center;
     gap: 0.7em;
     letter-spacing: 1px;
+    justify-content: center;
 }
 .big-chatbot-input input {
     font-size: 1.3em !important;
@@ -261,18 +263,18 @@ st.sidebar.markdown("""
 </style>
 <div class='big-chatbot-card'>
     <div class='big-chatbot-title'>🤖 InstaDemo Chatbot</div>
-    <div style='font-size:1.1em; color:#fff; margin-bottom:1em;'>
+    <div style='font-size:1.1em; color:#fff; margin-bottom:1em; text-align:center;'>
         Enter a client issue (e.g. <b>"supply chain issues"</b>) or ask a question about B2B AI demos. The AI will find the most relevant demo(s) or answer your question using the database.
     </div>
 """, unsafe_allow_html=True)
 
-chat_input = st.sidebar.text_input(
+chat_input = st.text_input(
     "Describe a client issue or ask a question:",
-    key="chat_input",
+    key="chat_input_main",
     placeholder="E.g. supply chain issues or What is a good demo for insurance fraud detection?",
     label_visibility="collapsed"
 )
-st.sidebar.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 if chat_input.strip():
     with st.spinner('AI is thinking...'):
@@ -309,12 +311,12 @@ if chat_input.strip():
             st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
 
 if st.session_state['chat_history']:
-    st.sidebar.markdown("<div class='big-chatbot-card'>", unsafe_allow_html=True)
-    st.sidebar.markdown("<b style='font-size:1.2em;'>Recent Chat</b>", unsafe_allow_html=True)
+    st.markdown("<div class='big-chatbot-card'>", unsafe_allow_html=True)
+    st.markdown("<b style='font-size:1.2em;'>Recent Chat</b>", unsafe_allow_html=True)
     for user, bot in st.session_state['chat_history'][-5:]:
-        st.sidebar.markdown(f"<div class='big-chatbot-response'><b>You:</b> {user}</div>", unsafe_allow_html=True)
-        st.sidebar.markdown(f"<div class='big-chatbot-response'><b>AI:</b> {bot}</div>", unsafe_allow_html=True)
-    st.sidebar.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='big-chatbot-response'><b>You:</b> {user}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='big-chatbot-response'><b>AI:</b> {bot}</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
+st.markdown("---")
+st.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
