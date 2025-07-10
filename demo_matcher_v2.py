@@ -257,14 +257,18 @@ class DemoMatcherV2:
                 result = {
                     'rank': rank,
                     'similarity': float(similarity),
+                    'similarity_score': float(similarity),  # Add for compatibility
                     'client_name': demo_row.get('Name/Client', 'Unknown'),
                     'industry': demo_row.get('Industry', 'Unknown'),
                     'problem': self.problem_texts[idx],
+                    'client_problem': self.problem_texts[idx],  # Add for compatibility
                     'solution': self._clean_text(demo_row.get('Instalily AI Capabilities', '')),
                     'benefits': self._clean_text(demo_row.get('Benefit to Client', '')),
-                    'demo_link': demo_row.get('Portal Demo Link', demo_row.get('Demo link ', '')),
+                    'demo_link': demo_row.get('Demo link ', ''),  # Use the rightmost 'Demo link ' column
                     'date': demo_row.get('Date Uploaded', ''),
-                    'match_quality': self._get_quality_label(similarity)
+                    'match_quality': self._get_quality_label(similarity),
+                    'explanation': f"{self._get_quality_label(similarity)} match with {similarity:.3f} similarity",
+                    'demo_info': demo_row.to_dict()  # Add full demo info for compatibility
                 }
                 
                 results.append(result)

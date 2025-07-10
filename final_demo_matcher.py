@@ -78,13 +78,18 @@ class FinalDemoMatcher:
             result = {
                 'rank': rank,
                 'similarity': similarity,
+                'similarity_score': similarity,  # Add for compatibility
                 'client': row.get('Name/Client', 'Unknown'),
+                'client_name': row.get('Name/Client', 'Unknown'),  # Add for compatibility
                 'industry': row.get('Industry', 'Unknown'),
                 'problem': self.problems[idx],
+                'client_problem': self.problems[idx],  # Add for compatibility
                 'solution': row.get('Instalily AI Capabilities', ''),
                 'benefits': row.get('Benefit to Client', ''),
-                'demo_link': row.get('Portal Demo Link', ''),
-                'date': row.get('Date Uploaded', '')
+                'demo_link': row.get('Demo link ', ''),  # Use the rightmost 'Demo link ' column
+                'date': row.get('Date Uploaded', ''),
+                'explanation': f"Similarity: {similarity:.3f} - {self.problems[idx][:100]}{'...' if len(self.problems[idx]) > 100 else ''}",
+                'demo_info': row.to_dict()  # Add full demo info for compatibility
             }
             results.append(result)
         

@@ -252,14 +252,18 @@ class UltraRobustDemoMatcher:
                     result = {
                         'rank': rank,
                         'similarity': float(similarity),
+                        'similarity_score': float(similarity),  # Add this for compatibility
                         'client_name': row.get('Name/Client', 'Unknown'),
                         'industry': row.get('Industry', 'Unknown'),
                         'problem': self.valid_problems[idx],
+                        'client_problem': self.valid_problems[idx],  # Add this for compatibility
                         'solution': self._clean_text(row.get('Instalily AI Capabilities', '')),
                         'benefits': self._clean_text(row.get('Benefit to Client', '')),
-                        'demo_link': row.get('Portal Demo Link', ''),
+                        'demo_link': row.get('Demo link ', ''),  # Use the rightmost 'Demo link ' column
                         'date': row.get('Date Uploaded', ''),
-                        'quality': self._get_quality_label(similarity)
+                        'quality': self._get_quality_label(similarity),
+                        'explanation': f"{self._get_quality_label(similarity)} match with {similarity:.3f} similarity. Problem: {self.valid_problems[idx][:100]}{'...' if len(self.valid_problems[idx]) > 100 else ''}",
+                        'demo_info': row.to_dict()  # Add full demo info for compatibility
                     }
                     
                     results.append(result)
