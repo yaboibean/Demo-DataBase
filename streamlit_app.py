@@ -218,6 +218,10 @@ with st.form(key="search_form", clear_on_submit=False):
         height: 28px;
         display: block;
     }
+    /* Hide the default Streamlit submit button */
+    button[title="Submit"] {
+        display: none !important;
+    }
     </style>
     <div class="input-container">
     ''', unsafe_allow_html=True)
@@ -228,7 +232,7 @@ with st.form(key="search_form", clear_on_submit=False):
         help="Type your client's need and press Enter or click the arrow to search."
     )
     send_btn_html = '''
-    <button type="submit" class="send-btn-abs">
+    <button type="submit" class="send-btn-abs" title="Submit">
         <svg class="send-arrow-up" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="50" r="48" fill="white"/>
             <path d="M50 70 L50 30 M50 30 L35 45 M50 30 L65 45" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
@@ -238,7 +242,8 @@ with st.form(key="search_form", clear_on_submit=False):
     '''
     html(send_btn_html, height=80)
     st.markdown("</div>", unsafe_allow_html=True)
-    submitted = st.form_submit_button(label="", help="Send")
+    # Hide the Streamlit submit button by giving it a hidden label
+    submitted = st.form_submit_button(label=" ", help="Send")
 
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
