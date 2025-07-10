@@ -146,6 +146,9 @@ if df_full is not None:
 
 # --- MAIN SEARCH AND MATCHING ---
 if customer_need.strip():
+    if not isinstance(openai_api_key, str) or not openai_api_key:
+        st.error("OpenAI API key is missing or invalid. Please set your API key in Streamlit secrets or your .env file.")
+        st.stop()
     with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
         try:
             # Use CSV file directly, not Google Sheets
@@ -248,6 +251,7 @@ if chat_input.strip():
                 "Here is the demo database (CSV):\n" + sheet_summary
             )
             prompt = f"User question: {chat_input}"
+            # Use the same OpenAI API as the main model
             import openai
             openai.api_key = openai_api_key
             response = openai.chat.completions.create(
