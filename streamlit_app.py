@@ -111,50 +111,43 @@ if not openai_api_key:
 # Input box
 customer_need = st.text_area(
     "Enter the client's problem:",
-    height=100
+    height=100,
+    key="customer_need",
+    on_change=None,
+    help="Type your client's need and press Enter to search."
 )
 
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
 
-# Run matcher
-if st.button("Find Matches"):
-    if not customer_need.strip():
-        st.warning("Please enter a client need/problem.")
-    else:
-        with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
-            try:
-                matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
-                results = matcher.find_best_demos(customer_need, top_k=top_k)
-            except Exception as e:
-                st.error(f"Error: {e}")
-                st.stop()
+# Run matcher automatically when input changes (simulate 'Enter' to submit)
+if customer_need.strip():
+    with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
+        try:
+            matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
+            results = matcher.find_best_demos(customer_need, top_k=top_k)
+        except Exception as e:
+            st.error(f"Error: {e}")
+            st.stop()
 
-        if not results:
-            st.info("No relevant demos found.")
-        else:
-            st.subheader("")
-            for res in results:
-                demo = res.get('demo_info', {})
-                # Title (above everything)
-                st.markdown(f"<h3 style='margin-bottom:0.2em'>{demo.get(COMPANY_COL, 'N/A')}</h3>", unsafe_allow_html=True)
-                # Date Uploaded
-                st.markdown(f"<span class='field-label'>Date Uploaded:</span> {demo.get('Date Uploaded', 'N/A')}", unsafe_allow_html=True)
-                # Similarity Score
-                st.markdown(f"<span class='score'>⭐ Similarity Score: {res.get('similarity_score', 'N/A'):.3f}</span>", unsafe_allow_html=True)
-                # Reason
-                st.markdown(f"<div class='reason'><b>Reason:</b> {res.get('explanation', 'N/A')}</div>", unsafe_allow_html=True)
-                # Demo Link
-                demo_link = res.get('demo_link')
-                if demo_link:
-                    st.markdown(f"<div class='demo-link'><b>Demo Link:</b> <a href='{demo_link}' target='_blank'>Click here</a></div>", unsafe_allow_html=True)
-                # Client Problem
-                st.markdown(f"<span class='field-label'>Client Problem:</span> {demo.get('Client Problem', '')}", unsafe_allow_html=True)
-                # Instalily AI Capabilities
-                st.markdown(f"<span class='field-label'>Instalily AI Capabilities:</span> {demo.get('Instalily AI Capabilities', '')}", unsafe_allow_html=True)
-                # Benefit to Client
-                st.markdown(f"<span class='field-label'>Benefit to Client:</span> {demo.get('Benefit to Client', '')}", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+    if not results:
+        st.info("No relevant demos found.")
+    else:
+        st.subheader("")
+        for res in results:
+            demo = res.get('demo_info', {})
+            st.markdown(f"<div class='result-card'>", unsafe_allow_html=True)
+            st.markdown(f"<h3 style='margin-bottom:0.2em'>{demo.get(COMPANY_COL, 'N/A')}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<span class='field-label'>Date Uploaded:</span> {demo.get('Date Uploaded', 'N/A')}", unsafe_allow_html=True)
+            st.markdown(f"<span class='score'>⭐ Similarity Score: {res.get('similarity_score', 'N/A'):.3f}</span>", unsafe_allow_html=True)
+            st.markdown(f"<div class='reason'><b>Reason:</b> {res.get('explanation', 'N/A')}</div>", unsafe_allow_html=True)
+            demo_link = res.get('demo_link')
+            if demo_link:
+                st.markdown(f"<div class='demo-link'><b>Demo Link:</b> <a href='{demo_link}' target='_blank'>Click here</a></div>", unsafe_allow_html=True)
+            st.markdown(f"<span class='field-label'>Client Problem:</span> {demo.get('Client Problem', '')}", unsafe_allow_html=True)
+            st.markdown(f"<span class='field-label'>Instalily AI Capabilities:</span> {demo.get('Instalily AI Capabilities', '')}", unsafe_allow_html=True)
+            st.markdown(f"<span class='field-label'>Benefit to Client:</span> {demo.get('Benefit to Client', '')}", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by Instalily AI. Secure & ready for Streamlit Community Cloud.")
