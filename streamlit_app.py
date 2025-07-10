@@ -5,9 +5,6 @@ from demo_matcher import DemoMatcher
 from openai_demo_matcher import OpenAIDemoMatcher
 from openai_gpt_matcher import OpenAIGPTMatcher
 from dotenv import load_dotenv, find_dotenv
-import gspread
-from gspread_dataframe import get_as_dataframe
-from google.oauth2.service_account import Credentials
 
 # Try to find and load the .env file from anywhere in the project
 dotenv_path = find_dotenv()
@@ -79,22 +76,6 @@ MATCH_COLUMNS = ["Client Problem", "Instalily AI Capabilities", "Benefit to Clie
 VIDEO_LINK_COL = "Demo link"  # Updated to match actual column name
 COMPANY_COL = "Name/Client"   # Updated to match actual column name
 
-# --- GOOGLE SHEETS CONFIG ---
-# Set your Google Sheets info here
-GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "<YOUR_SHEET_ID>")  # Set this in .env or Streamlit secrets
-GOOGLE_SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME", "Sheet1")       # Set this in .env or Streamlit secrets
-GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDS_JSON", "google_creds.json")  # Path to your service account JSON
-
-# --- GOOGLE SHEETS LOADER ---
-def load_gsheet_as_df(sheet_id, sheet_name, creds_json):
-    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    creds = Credentials.from_service_account_file(creds_json, scopes=scopes)
-    gc = gspread.authorize(creds)
-    ws = gc.open_by_key(sheet_id).worksheet(sheet_name)
-    df = get_as_dataframe(ws, evaluate_formulas=True, header=0)
-    df = df.dropna(how='all')  # Drop empty rows
-    return df
-
 # Load API key robustly (strip whitespace just in case)
 def get_openai_key():
     # Try Streamlit secrets first (for cloud), then .env (for local)
@@ -152,9 +133,9 @@ top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
 # --- FILTERS/FACETED SEARCH ---
 # Load the full DataFrame for filter options
 try:
-    df_full = load_gsheet_as_df(GOOGLE_SHEET_ID, GOOGLE_SHEET_NAME, GOOGLE_CREDS_JSON)
+    df_full = pd.read_csv(SPREADSHEET_PATH)
 except Exception as e:
-    st.error(f"Could not load Google Sheet for filters: {e}")
+    st.error(f"Could not load spreadsheet for filters: {e}")
     df_full = None
 
 # Only keep Industry and Date Uploaded filters
@@ -184,34 +165,23 @@ if df_full is not None:
 if customer_need.strip():
     with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
         try:
-            # Use Google Sheets for matcher as well
-            matcher = OpenAIGPTMatcher(GOOGLE_SHEET_ID, MATCH_COLUMNS, openai_api_key, sheet_mode=True, sheet_name=GOOGLE_SHEET_NAME, creds_json=GOOGLE_CREDS_JSON)
+            # Use CSV file directly, not Google Sheets
+            matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
             results = matcher.find_best_demos(customer_need, top_k=top_k)
         except Exception as e:
             st.error(f"Error: {e}")
             st.stop()
 
     # --- APPLY FILTERS TO RESULTS ---
-    if df_full is not None and (any(v != "All" for v in selected_filters.values()) or start_date or end_date):
+    if df_full is not None and any(v != "All" for v in selected_filters.values()):
         filtered = []
         for res in results:
             demo = res.get('demo_info', {})
             match = True
-            # Industry filter
             for col, val in selected_filters.items():
                 if val != "All" and demo.get(col, None) != val:
                     match = False
                     break
-            # Date Uploaded filter
-            if match and "Date Uploaded" in demo and (start_date or end_date):
-                try:
-                    demo_date = pd.to_datetime(demo["Date Uploaded"], errors='coerce').date()
-                    if start_date and demo_date < start_date:
-                        match = False
-                    if end_date and demo_date > end_date:
-                        match = False
-                except Exception:
-                    match = False
             if match:
                 filtered.append(res)
         results = filtered
