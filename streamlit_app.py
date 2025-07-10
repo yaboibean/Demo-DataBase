@@ -112,8 +112,19 @@ if not openai_api_key:
 customer_need = st.text_input(
     "Enter the client's problem:",
     key="customer_need",
-    help="Type your client's need and press Enter to search."
+    help="Type your client's need and press Enter to search.",
+    placeholder="Describe your client's problem here...",
 )
+# Add custom CSS to make the input box larger
+st.markdown('''
+<style>
+input#customer_need {
+    height: 3em !important;
+    font-size: 1.2em !important;
+    padding: 1.2em 1em !important;
+}
+</style>
+''', unsafe_allow_html=True)
 
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
