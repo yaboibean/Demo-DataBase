@@ -212,6 +212,10 @@ with st.sidebar:
             start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
             end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
+# --- Ensure chat_history is always initialized (move to very top) ---
+if 'chat_history' not in st.session_state:
+    st.session_state['chat_history'] = []
+
 # --- MAIN AREA: 80% WIDTH, SEARCH/RESULTS ---
 # --- MODERN DYNAMIC LAYOUT: MAIN AREA SPLIT ---
 if st.session_state.get('expand_chat', False):
