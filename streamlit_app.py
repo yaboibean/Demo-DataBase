@@ -23,7 +23,7 @@ st.set_page_config(
 )
 
 # Title
-st.title("AI-Powered Demo Matcher")
+st.title("AI-Powered Demo TESTING")
 
 # File and columns - Use the actual CSV file and correct column names
 SPREADSHEET_PATH = os.getenv("DEMO_SPREADSHEET", "Copy of Master File Demos Database - Demos Database.csv")
