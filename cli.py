@@ -36,8 +36,11 @@ def main():
         sys.exit(1)
 
     # Search for similar demos
-    print(f"\nSearching for demos similar to: '{args.customer_need}'")
+    print(f"\nSearching for demos most relevant to: '{args.customer_need}'")
     print("-" * 60)
+    print("\nThis tool uses advanced AI to deeply analyze your input and compare it to every 'Client Problem' in the database, using full semantic understanding (not just keywords).\n")
+    print("It will return the most contextually relevant demos, showing only the exact, word-for-word fields from the database: Company Name, Date Uploaded, Client Problem, Instalily AI Capabilities, Benefit to Client, and Demo Link.\n")
+    print("All available context is considered for the best match.\n")
     analysis = matcher.get_detailed_analysis(args.customer_need, args.top_k)
     print(analysis)
 

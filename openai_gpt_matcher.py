@@ -48,10 +48,16 @@ class OpenAIGPTMatcher:
             raise ValueError("customer_need must be a non-empty string.")
         demo_texts = [self._format_demo(row) for _, row in self.demos_df.iterrows()]
         prompt = (
-            f"You are an expert AI demo matcher. Given a client need, select the {top_k} most relevant demos from the list below. "
-            "For each, provide: 1) a similarity score (0-1), 2) a short explanation of why it matches, and 3) the company name and video link if available. "
-            "Only select demos that are truly relevant.\n\n"
-            f"Client Need: {customer_need}\n\n"
+            f"You are an expert AI demo matcher for a B2B AI agent company. Your job is to select the {top_k} most contextually relevant demos from the list below, given a specific client need.\n"
+            "You must use deep semantic reasoning, not just keyword matching. Focus most heavily on the 'Client Problem' field, but also consider 'Instalily AI Capabilities' and 'Benefit to Client' for additional context.\n"
+            "Only select demos that are truly relevant to the client need, even if the wording is different. Ignore demos that are only superficially related.\n"
+            "For each selected demo, provide:\n"
+            "  1) A similarity score (0.00-1.00) reflecting how well the demo matches the client need, based on your full understanding.\n"
+            "  2) A concise explanation of why this demo is a strong match, referencing specific aspects of the client need and the demo fields.\n"
+            "  3) The company name and video link, copied exactly as shown in the data.\n"
+            "  4) Only use information present in the provided data. Do not invent or infer any details.\n"
+            "\nAll output fields (company, video_link, etc.) must be word-for-word from the data.\n"
+            "\nClient Need: " + customer_need + "\n\n"
             "Demos:\n" + "\n".join([f"[{i+1}] {demo}" for i, demo in enumerate(demo_texts)]) +
             "\n\nRespond in JSON as a list of objects with keys: 'rank', 'similarity_score', 'explanation', 'company', 'video_link', and 'demo_index'."
         )
