@@ -44,6 +44,12 @@ st.markdown("""
         margin-bottom: 2em;
         box-shadow: 0 2px 16px 0 rgba(30,144,255,0.08);
         border: 1px solid #22263a;
+        width: 100%;
+        display: block;
+        overflow-x: auto;
+        min-width: 0;
+        min-height: 0;
+        word-break: break-word;
     }
     .score {
         color: #FFD700;
@@ -108,20 +114,21 @@ if not openai_api_key:
     st.error("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
     st.stop()
 
-# Input box
-customer_need = st.text_area(
-    "Enter the client's problem:",
-    height=100,
-    key="customer_need",
-    on_change=None,
-    help="Type your client's need and press Enter to search."
-)
+# Input box and send button
+with st.form(key="search_form", clear_on_submit=False):
+    customer_need = st.text_area(
+        "Enter the client's problem:",
+        height=100,
+        key="customer_need",
+        help="Type your client's need and press Enter or click Send to search."
+    )
+    submitted = st.form_submit_button("Send")
 
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
 
-# Run matcher automatically when input changes (simulate 'Enter' to submit)
-if customer_need.strip():
+# Only show results if user has started typing
+if customer_need.strip() and submitted:
     with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
         try:
             matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
