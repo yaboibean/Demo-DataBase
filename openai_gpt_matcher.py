@@ -48,12 +48,13 @@ class OpenAIGPTMatcher:
             raise ValueError("customer_need must be a non-empty string.")
         demo_texts = [self._format_demo(row) for _, row in self.demos_df.iterrows()]
         prompt = (
-            f"You are an expert AI demo matcher for a B2B AI agent company. Your job is to select the {top_k} most contextually relevant demos from the list below, given a specific client need.\n"
-            "You must use deep semantic reasoning, not just keyword matching. Focus most heavily on the 'Client Problem' field, but also consider 'Instalily AI Capabilities' and 'Benefit to Client' for additional context.\n"
-            "Only select demos that are truly relevant to the client need, even if the wording is different. Ignore demos that are only superficially related.\n"
+            f"You are an expert sales engineer and AI solutions consultant at a B2B AI company. Your job is to help our sales team select the {top_k} most relevant past demos to show a new prospective client, based on their specific business problem or need.\n"
+            "You must use deep semantic reasoning and business understanding, not just keyword matching. Focus most heavily on the 'Client Problem' field, but also consider 'Instalily AI Capabilities' and 'Benefit to Client' for additional context and business fit.\n"
+            "Your goal is to find demos where the original client's problem is most similar to the new client's need, and where the AI solution and benefits would be persuasive to the new prospect.\n"
+            "Only select demos that are truly relevant to the new client's need, even if the wording is different. Ignore demos that are only superficially related.\n"
             "For each selected demo, provide:\n"
-            "  1) A similarity score (0.00-1.00) reflecting how well the demo matches the client need, based on your full understanding.\n"
-            "  2) A concise explanation of why this demo is a strong match, referencing specific aspects of the client need and the demo fields.\n"
+            "  1) A similarity score (0.00-1.00) reflecting how well the demo matches the new client's need, based on your full business and technical understanding.\n"
+            "  2) A concise, sales-ready explanation of why this demo is a strong match, referencing specific aspects of the new client's need and the demo fields. This explanation should help a salesperson justify showing this demo to the client.\n"
             "  3) The company name and video link, copied exactly as shown in the data.\n"
             "  4) Only use information present in the provided data. Do not invent or infer any details.\n"
             "\nAll output fields (company, video_link, etc.) must be word-for-word from the data.\n"
