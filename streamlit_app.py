@@ -138,22 +138,28 @@ except Exception as e:
     st.error(f"Could not load spreadsheet for filters: {e}")
     df_full = None
 
-# Define filter columns (update as needed)
+# Only keep Industry and Date Uploaded filters
 FILTER_COLS = [
     ("Industry", "Industry"),
-    ("Date Uploaded", "Date Uploaded"),
-    ("AI Capability", "Instalily AI Capabilities"),
-    ("Benefit", "Benefit to Client"),
 ]
 
 selected_filters = {}
+start_date = None
+end_date = None
 if df_full is not None:
     st.sidebar.markdown("### Filter Demos")
+    # Industry filter
     for label, col in FILTER_COLS:
         if col in df_full.columns:
             options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
             selected = st.sidebar.selectbox(f"{label}", options, key=f"filter_{col}")
             selected_filters[col] = selected
+    # Date Uploaded range filter
+    if "Date Uploaded" in df_full.columns:
+        min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
+        max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
+        start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
+        end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
 # --- MAIN SEARCH AND MATCHING ---
 if customer_need.strip():
@@ -166,15 +172,26 @@ if customer_need.strip():
             st.stop()
 
     # --- APPLY FILTERS TO RESULTS ---
-    if df_full is not None and any(v != "All" for v in selected_filters.values()):
+    if df_full is not None and (any(v != "All" for v in selected_filters.values()) or start_date or end_date):
         filtered = []
         for res in results:
             demo = res.get('demo_info', {})
             match = True
+            # Industry filter
             for col, val in selected_filters.items():
                 if val != "All" and demo.get(col, None) != val:
                     match = False
                     break
+            # Date Uploaded filter
+            if match and "Date Uploaded" in demo and (start_date or end_date):
+                try:
+                    demo_date = pd.to_datetime(demo["Date Uploaded"], errors='coerce').date()
+                    if start_date and demo_date < start_date:
+                        match = False
+                    if end_date and demo_date > end_date:
+                        match = False
+                except Exception:
+                    match = False
             if match:
                 filtered.append(res)
         results = filtered
@@ -224,15 +241,18 @@ if 'chat_history' not in st.session_state:
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🤖 Chatbot Assistant")
-chat_input = st.sidebar.text_input("Ask the AI for help or suggestions:", key="chat_input", placeholder="E.g. Suggest search terms for insurance demos")
+chat_input = st.sidebar.text_input("Ask the AI a question about B2B AI demos:", key="chat_input", placeholder="E.g. What is a good demo for insurance fraud detection?")
 if chat_input.strip():
-    # For demo: Use matcher to suggest search terms or clarify
-    try:
-        matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
-        response = matcher.suggest_search_terms(chat_input)
-        st.session_state['chat_history'].append((chat_input, response))
-    except Exception as e:
-        st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+    # Only respond if the input is a question (ends with '?')
+    if chat_input.strip().endswith('?'):
+        try:
+            matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
+            response = matcher.suggest_search_terms(chat_input)
+            st.session_state['chat_history'].append((chat_input, response))
+        except Exception as e:
+            st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+    else:
+        st.session_state['chat_history'].append((chat_input, "Please enter a question ending with a '?' for the chatbot assistant."))
 
 if st.session_state['chat_history']:
     for user, bot in st.session_state['chat_history'][-5:]:
