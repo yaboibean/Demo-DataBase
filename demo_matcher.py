@@ -37,12 +37,29 @@ class DemoMatcher:
         demo_texts = []
         for _, row in self.demos_df.iterrows():
             text = str(row['Client Problem']) if 'Client Problem' in row and pd.notna(row['Client Problem']) else ''
+            # Clean and normalize the text for better matching
+            text = self._clean_text(text)
             demo_texts.append(text)
         if not demo_texts:
             raise ValueError("No demo texts found for embedding.")
         return self.model.encode(demo_texts, show_progress_bar=False)
+    
+    def _clean_text(self, text: str) -> str:
+        """
+        Clean and normalize text for better matching.
+        Args:
+            text: Input text to clean
+        Returns:
+            Cleaned text
+        """
+        if not text or text == 'nan':
+            return ''
+        # Strip whitespace, normalize spaces, remove extra line breaks
+        text = str(text).strip()
+        text = ' '.join(text.split())  # Normalize whitespace
+        return text
 
-    def find_similar_demos(self, customer_need: str, top_k: int = 2, min_score: float = 0.3) -> List[Dict[str, Any]]:
+    def find_similar_demos(self, customer_need: str, top_k: int = 2, min_score: float = 0.1) -> List[Dict[str, Any]]:
         """
         Find the most similar demos to a customer need.
         Args:
@@ -54,20 +71,37 @@ class DemoMatcher:
         """
         if not customer_need or not isinstance(customer_need, str):
             raise ValueError("customer_need must be a non-empty string.")
+        
+        # Clean the customer need the same way we clean the demo texts
+        cleaned_customer_need = self._clean_text(customer_need)
+        
         # Only embed the user input for matching against 'Client Problem'
-        need_embedding = self.model.encode([customer_need])[0].reshape(1, -1)
+        need_embedding = self.model.encode([cleaned_customer_need])[0].reshape(1, -1)
         similarities = cosine_similarity(need_embedding, self.demo_embeddings)[0]
         top_indices = np.argsort(similarities)[::-1]
+        
         results = []
         for idx in top_indices:
             score = similarities[idx]
             if score < min_score:
                 continue
             demo_info = self.demos_df.iloc[idx].to_dict()
+            
+            # Add debugging info
+            original_problem = demo_info.get('Client Problem', '')
+            cleaned_problem = self._clean_text(str(original_problem))
+            
             results.append({
                 'similarity_score': float(score),
                 'demo_info': demo_info,
-                'rank': len(results) + 1
+                'rank': len(results) + 1,
+                'debug_info': {
+                    'original_customer_need': customer_need,
+                    'cleaned_customer_need': cleaned_customer_need,
+                    'original_problem': original_problem,
+                    'cleaned_problem': cleaned_problem,
+                    'exact_text_match': cleaned_customer_need.lower() == cleaned_problem.lower()
+                }
             })
             if len(results) >= top_k:
                 break
@@ -106,6 +140,49 @@ class DemoMatcher:
         
         return analysis
     
+    def debug_matching(self, customer_need: str) -> str:
+        """
+        Debug method to show what's happening in the matching process.
+        Args:
+            customer_need: The client's need/problem as a string.
+        Returns:
+            Debug information as a formatted string.
+        """
+        debug_info = []
+        debug_info.append("=== DEBUG MATCHING PROCESS ===")
+        debug_info.append(f"Original customer need: '{customer_need}'")
+        
+        cleaned_need = self._clean_text(customer_need)
+        debug_info.append(f"Cleaned customer need: '{cleaned_need}'")
+        
+        debug_info.append("\n=== AVAILABLE CLIENT PROBLEMS ===")
+        for idx, row in self.demos_df.iterrows():
+            original_problem = row.get('Client Problem', '')
+            cleaned_problem = self._clean_text(str(original_problem))
+            company = row.get('Name/Client', 'Unknown')
+            
+            debug_info.append(f"[{idx}] {company}")
+            debug_info.append(f"    Original: '{original_problem}'")
+            debug_info.append(f"    Cleaned:  '{cleaned_problem}'")
+            debug_info.append(f"    Empty: {cleaned_problem == ''}")
+            debug_info.append(f"    Exact match: {cleaned_need.lower() == cleaned_problem.lower()}")
+            debug_info.append("")
+        
+        # Try the actual matching
+        try:
+            results = self.find_similar_demos(customer_need, top_k=5, min_score=0.0)
+            debug_info.append("=== MATCHING RESULTS ===")
+            for result in results:
+                debug_info.append(f"Rank {result['rank']}: Score {result['similarity_score']:.4f}")
+                debug_info.append(f"  Company: {result['demo_info'].get('Name/Client', 'Unknown')}")
+                if 'debug_info' in result:
+                    debug_info.append(f"  Exact match: {result['debug_info']['exact_text_match']}")
+                debug_info.append("")
+        except Exception as e:
+            debug_info.append(f"Error in matching: {e}")
+        
+        return "\n".join(debug_info)
+
     def create_sample_data(self, file_path: str = "sample_demo_database.csv"):
         """
         Create a sample spreadsheet with demo data for testing

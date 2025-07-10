@@ -46,8 +46,41 @@ class OpenAIGPTMatcher:
         """
         if not customer_need or not isinstance(customer_need, str):
             raise ValueError("customer_need must be a non-empty string.")
-        # Only use the 'Client Problem' column for matching
-        client_problems = self.demos_df['Client Problem'].fillna('').tolist()
+        
+        # Clean and normalize text for better matching
+        def clean_text(text):
+            if not text or str(text).lower() == 'nan':
+                return ''
+            return str(text).strip()
+        
+        cleaned_customer_need = clean_text(customer_need)
+        
+        # Only use the 'Client Problem' column for matching - clean the data
+        client_problems = []
+        for i, problem in enumerate(self.demos_df['Client Problem']):
+            cleaned_problem = clean_text(problem)
+            if cleaned_problem:  # Only include non-empty problems
+                client_problems.append((i, cleaned_problem))
+        
+        # Check for exact matches first
+        exact_matches = []
+        for idx, problem in client_problems:
+            if cleaned_customer_need.lower() == problem.lower():
+                demo_info = self.demos_df.iloc[idx].to_dict()
+                exact_matches.append({
+                    'rank': len(exact_matches) + 1,
+                    'similarity_score': 1.0,
+                    'explanation': f'EXACT MATCH: This demo addresses the identical problem statement.',
+                    'demo_info': demo_info,
+                    'demo_index': idx
+                })
+                if len(exact_matches) >= top_k:
+                    return exact_matches
+        
+        # If we have exact matches, return them
+        if exact_matches:
+            return exact_matches
+            
         prompt = (
             f"You are an expert AI demo matcher for a B2B AI company. Your job is to select the {top_k} most relevant past demos from the list below, given a specific client problem or need.\n"
             "You must use deep semantic reasoning, not just keyword matching. ONLY use the 'Client Problem' field for your analysis.\n"
@@ -57,18 +90,17 @@ class OpenAIGPTMatcher:
             "For each selected demo, provide:\n"
             "  1) A similarity score (0.00-1.00) reflecting how well the demo matches the new client's need, based on your full understanding.\n"
             "  2) A concise explanation of why this demo is a strong match, referencing specific aspects of the new client's need and the demo problem.\n"
-            "  3) The company name and video link, copied exactly as shown in the data.\n"
+            "  3) The demo_index number exactly as shown in the list.\n"
             "  4) Only use information present in the provided data. Do not invent or infer any details.\n"
-            "\nAll output fields (company, video_link, etc.) must be word-for-word from the data.\n"
-            "\nClient Need: " + customer_need + "\n\n"
-            "Client Problems:\n" + "\n".join([f"[{i+1}] {problem}" for i, problem in enumerate(client_problems)]) +
-            "\n\nRespond in JSON as a list of objects with keys: 'rank', 'similarity_score', 'explanation', 'company', 'video_link', and 'demo_index'."
+            "\nClient Need: " + cleaned_customer_need + "\n\n"
+            "Client Problems:\n" + "\n".join([f"[{idx}] {problem}" for idx, problem in client_problems]) +
+            "\n\nRespond in JSON as a list of objects with keys: 'rank', 'similarity_score', 'explanation', and 'demo_index'."
         )
         try:
             response = openai.chat.completions.create(
                 model=self.gpt_model,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
+                temperature=0.1,  # Lower temperature for more consistent results
                 max_tokens=1200
             )
             import json
@@ -95,3 +127,38 @@ class OpenAIGPTMatcher:
             match['demo_info'] = demo_info
             results.append(match)
         return results
+
+    def debug_matching(self, customer_need: str) -> str:
+        """
+        Debug method to show what's happening in the matching process.
+        Args:
+            customer_need: The client's need/problem as a string.
+        Returns:
+            Debug information as a formatted string.
+        """
+        def clean_text(text):
+            if not text or str(text).lower() == 'nan':
+                return ''
+            return str(text).strip()
+        
+        debug_info = []
+        debug_info.append("=== DEBUG OPENAI MATCHING PROCESS ===")
+        debug_info.append(f"Original customer need: '{customer_need}'")
+        
+        cleaned_need = clean_text(customer_need)
+        debug_info.append(f"Cleaned customer need: '{cleaned_need}'")
+        
+        debug_info.append("\n=== AVAILABLE CLIENT PROBLEMS ===")
+        for idx, row in self.demos_df.iterrows():
+            original_problem = row.get('Client Problem', '')
+            cleaned_problem = clean_text(original_problem)
+            company = row.get('Name/Client', 'Unknown')
+            
+            debug_info.append(f"[{idx}] {company}")
+            debug_info.append(f"    Original: '{original_problem}'")
+            debug_info.append(f"    Cleaned:  '{cleaned_problem}'")
+            debug_info.append(f"    Empty: {cleaned_problem == ''}")
+            debug_info.append(f"    Exact match: {cleaned_need.lower() == cleaned_problem.lower()}")
+            debug_info.append("")
+        
+        return "\n".join(debug_info)
