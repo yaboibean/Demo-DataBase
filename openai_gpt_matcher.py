@@ -13,7 +13,7 @@ class OpenAIGPTMatcher:
             openai_api_key: OpenAI API key string.
             gpt_model: OpenAI GPT model name.
         """
-        self.spreadsheet_path = spreadsheet_path
+        self.spreadsheet_path = spreadsheet_path # Path to the CSV file
         self.match_columns = match_columns
         self.gpt_model = gpt_model
         openai.api_key = openai_api_key
