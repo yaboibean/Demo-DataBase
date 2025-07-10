@@ -69,14 +69,20 @@ class OpenAIGPTMatcher:
                 demo_info = self.demos_df.iloc[idx].to_dict()
                 # Only use the 'Demo link ' column for the link
                 demo_link = demo_info.get('Demo link ', '')
-                exact_matches.append({
+                exact_match = {
                     'rank': len(exact_matches) + 1,
                     'similarity_score': 1.0,
                     'explanation': 'EXACT MATCH: This demo addresses the identical problem statement.',
-                    'demo_info': demo_info,
+                    'demo_link': demo_link,
                     'demo_index': idx,
-                    'demo_link': demo_link
-                })
+                    'demo_info': demo_info,
+                    'client_name': demo_info.get('Name/Client', 'Unknown'),
+                    'industry': demo_info.get('Industry', 'Unknown'),
+                    'client_problem': demo_info.get('Client Problem', ''),
+                    'solution': demo_info.get('Instalily AI Capabilities', ''),
+                    'benefits': demo_info.get('Benefit to Client', '')
+                }
+                exact_matches.append(exact_match)
                 if len(exact_matches) >= top_k:
                     return exact_matches
         # If we have exact matches, return them
@@ -128,14 +134,22 @@ class OpenAIGPTMatcher:
             else:
                 demo_info = {}
                 demo_link = ''
-            # Always include explanation and demo_link at the top level
-            explanation = match.get('explanation', '')
-            results.append({
-                **match,
-                'demo_info': demo_info,
+            
+            # Ensure all critical fields are present at the top level
+            result = {
+                'rank': match.get('rank', 0),
+                'similarity_score': match.get('similarity_score', 0.0),
+                'explanation': match.get('explanation', 'No explanation provided'),
                 'demo_link': demo_link,
-                'explanation': explanation
-            })
+                'demo_index': idx,
+                'demo_info': demo_info,
+                'client_name': demo_info.get('Name/Client', 'Unknown'),
+                'industry': demo_info.get('Industry', 'Unknown'),
+                'client_problem': demo_info.get('Client Problem', ''),
+                'solution': demo_info.get('Instalily AI Capabilities', ''),
+                'benefits': demo_info.get('Benefit to Client', '')
+            }
+            results.append(result)
         return results
 
     def debug_matching(self, customer_need: str) -> str:
