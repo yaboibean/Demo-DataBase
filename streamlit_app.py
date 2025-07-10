@@ -240,17 +240,23 @@ if 'customer_need' not in st.session_state:
 if 'submitted' not in st.session_state:
     st.session_state['submitted'] = False
 
+def on_text_change():
+    st.session_state['customer_need'] = st.session_state['input_text']
+    st.session_state['submitted'] = False
+
 def submit_callback():
     st.session_state['submitted'] = True
 
 st.markdown('<div class="input-container">', unsafe_allow_html=True)
-customer_need = st.text_area(
+input_text = st.text_area(
     "Enter the client's problem:",
     height=100,
-    key="customer_need",
-    help="Type your client's need and press Enter or click the arrow to search."
+    key="input_text",
+    value=st.session_state['customer_need'],
+    help="Type your client's need and press Enter or click the arrow to search.",
+    on_change=on_text_change
 )
-btn_enabled = bool(st.session_state['customer_need'].strip())
+btn_enabled = bool(st.session_state['input_text'].strip())
 btn_class = "send-btn-abs enabled" if btn_enabled else "send-btn-abs"
 arrow_class = "send-arrow-up enabled" if btn_enabled else "send-arrow-up disabled"
 arrow_svg = f'''
@@ -281,6 +287,7 @@ window.addEventListener('sendDemoSearch', function() {
 if st.button("", key="hidden_submit_btn", help="Send", on_click=submit_callback, disabled=not btn_enabled):
     pass
 submitted = st.session_state['submitted']
+customer_need = st.session_state['input_text']
 
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
