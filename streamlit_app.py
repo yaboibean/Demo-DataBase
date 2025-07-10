@@ -91,134 +91,13 @@ def get_openai_key():
 
 openai_api_key = get_openai_key()
 
-# Input box
-customer_need = st.text_input(
-    "Enter the client's problem:",
-    key="customer_need",
-    help="Type your client's need and press Enter to search.",
-    placeholder="Describe your client's problem here...",
-)
-# Add custom CSS to make the input box much larger
-st.markdown('''
-<style>
-input#customer_need {
-    height: 4em !important;
-    font-size: 1.5em !important;
-    padding: 1.8em 1.2em !important;
-    border-radius: 1em !important;
-}
-</style>
-''', unsafe_allow_html=True)
-
-# Number of results
-top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
-
-# --- FILTERS/FACETED SEARCH ---
-# Load the full DataFrame for filter options
+# Make sure df_full is defined before chatbot logic
 try:
     df_full = pd.read_csv(SPREADSHEET_PATH)
 except Exception as e:
-    st.error(f"Could not load spreadsheet for filters: {e}")
     df_full = None
 
-# Only keep Industry and Date Uploaded filters
-FILTER_COLS = [
-    ("Industry", "Industry"),
-]
-
-selected_filters = {}
-start_date = None
-end_date = None
-if df_full is not None:
-    st.sidebar.markdown("### Filter Demos")
-    # Industry filter
-    for label, col in FILTER_COLS:
-        if col in df_full.columns:
-            options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
-            selected = st.sidebar.selectbox(f"{label}", options, key=f"filter_{col}")
-            selected_filters[col] = selected
-    # Date Uploaded range filter
-    if "Date Uploaded" in df_full.columns:
-        min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
-        max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
-        start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
-        end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
-
-# --- MAIN SEARCH AND MATCHING ---
-if customer_need.strip():
-    if not isinstance(openai_api_key, str) or not openai_api_key:
-        st.error("OpenAI API key is missing or invalid. Please set your API key in Streamlit secrets or your .env file.")
-        st.stop()
-    with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
-        try:
-            # Use CSV file directly, not Google Sheets
-            matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
-            results = matcher.find_best_demos(customer_need, top_k=top_k)
-        except Exception as e:
-            st.error(f"Error: {e}")
-            st.stop()
-
-    # --- APPLY FILTERS TO RESULTS ---
-    if df_full is not None:
-        filtered = []
-        for res in results:
-            demo = res.get('demo_info', {})
-            match = True
-            # Industry filter
-            for col, val in selected_filters.items():
-                if val != "All" and demo.get(col, None) != val:
-                    match = False
-                    break
-            # Date Uploaded filter
-            if match and start_date and end_date and "Date Uploaded" in demo:
-                try:
-                    demo_date = pd.to_datetime(demo["Date Uploaded"], errors='coerce').date()
-                    if demo_date < start_date or demo_date > end_date:
-                        match = False
-                except Exception:
-                    match = False
-            if match:
-                filtered.append(res)
-        results = filtered
-
-    if not results:
-        st.info("No relevant demos found.")
-    else:
-        st.subheader("")
-        for res in results:
-            demo = res.get('demo_info', {})
-            # --- DEMO VIDEO PREVIEW ---
-            video_url = demo.get('Demo Video Link') or demo.get('Video Link') or demo.get('Demo link')
-            # Use a container with st.markdown for the card, and apply the card CSS class
-            st.markdown(f"""
-<div class='result-card'>
-
-<span style='font-size:2.2em; font-weight:800'>{demo.get(COMPANY_COL, 'N/A')}</span>
-
-[Demo Link: Click here]({res.get('demo_link')})
-
-**Date Uploaded:** {demo.get('Date Uploaded', 'N/A')}
-
-**⭐ Similarity Score:** {res.get('similarity_score', 'N/A'):.3f}
-
-**Reason:** <span style='color:#00FFAA'>{res.get('explanation', 'N/A')}</span>
-
-**Client Problem:** {demo.get('Client Problem', '')}
-
-**InstaLILY AI Capabilities:** {demo.get('InstaLILY AI Capabilities', '')}
-
-**Benefit to Client:** {demo.get('Benefit to Client', '')}
-
-""", unsafe_allow_html=True)
-            # Embed video if available and is a YouTube or mp4 link
-            if video_url and ("youtube.com" in video_url or "youtu.be" in video_url):
-                st.video(video_url)
-            elif video_url and video_url.endswith(('.mp4', '.webm', '.mov')):
-                st.video(video_url)
-            elif video_url and video_url.startswith('http'):
-                st.markdown(f"[Preview Video]({video_url})")
-            st.markdown("</div>", unsafe_allow_html=True)
-
+# Remove the top search bar and use only the chatbot input for demo matching and Q&A
 # --- MAIN PAGE CHATBOT UI ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
