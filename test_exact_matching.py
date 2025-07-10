@@ -12,7 +12,7 @@ from openai_gpt_matcher import OpenAIGPTMatcher
 def test_exact_matching():
     """Test both matchers with exact text from the CSV"""
     
-    csv_file = "Copy of Master File Demos Database - Demos Database.csv"
+    csv_file = "/Users/arjansingh/Downloads/Demo Database/Copy of Master File Demos Database - Demos Database.csv"
     
     if not os.path.exists(csv_file):
         print(f"ERROR: CSV file not found: {csv_file}")

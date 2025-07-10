@@ -412,7 +412,7 @@ def main():
         print("Initializing Demo Matcher V2...")
         
         # Initialize matcher
-        csv_path = "Copy of Master File Demos Database - Demos Database.csv"
+        csv_path = "/Users/arjansingh/Downloads/Demo Database/Copy of Master File Demos Database - Demos Database.csv"
         matcher = DemoMatcherV2(csv_path)
         
         # Show statistics
@@ -458,4 +458,42 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    csv_path = "/Users/arjansingh/Downloads/Demo Database/Copy of Master File Demos Database - Demos Database.csv"
+    matcher = DemoMatcherV2(csv_path)
+    
+    # Show statistics
+    print(matcher.get_stats())
+    print()
+    
+    # Test functionality
+    print(matcher.test_search())
+    print()
+    
+    # Interactive example
+    print("=" * 80)
+    print("EXAMPLE SEARCH")
+    print("=" * 80)
+    
+    example_query = "help with customer support and ticket management"
+    print(matcher.format_results(example_query, top_k=3))
+    
+    # Allow interactive usage
+    print("\n" + "=" * 80)
+    print("INTERACTIVE MODE")
+    print("=" * 80)
+    print("Enter your search queries (type 'quit' to exit):")
+    
+    while True:
+        try:
+            user_input = input("\nSearch query: ").strip()
+            if user_input.lower() in ['quit', 'exit', 'q']:
+                break
+            
+            if user_input:
+                print(matcher.format_results(user_input, top_k=3))
+            
+        except KeyboardInterrupt:
+            print("\nExiting...")
+            break
+        except Exception as e:
+            print(f"Error: {e}")

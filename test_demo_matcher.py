@@ -9,7 +9,7 @@ def main():
     print("Initializing Demo Matcher V2...")
     
     # Initialize matcher
-    csv_path = "Copy of Master File Demos Database - Demos Database.csv"
+    csv_path = "/Users/arjansingh/Downloads/Demo Database/Copy of Master File Demos Database - Demos Database.csv"
     matcher = DemoMatcherV2(csv_path)
     
     # Test queries
