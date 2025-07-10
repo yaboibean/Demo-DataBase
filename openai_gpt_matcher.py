@@ -186,3 +186,29 @@ class OpenAIGPTMatcher:
             debug_info.append("")
         
         return "\n".join(debug_info)
+
+    def suggest_search_terms(self, user_query: str) -> str:
+        """
+        Given a user query (e.g., 'Suggest search terms for insurance demos'), use GPT to suggest relevant search terms or clarify/refine the query.
+        Args:
+            user_query: The user's question or request for help.
+        Returns:
+            A string with suggested search terms or advice.
+        """
+        prompt = (
+            "You are an expert AI demo search assistant. Given the following user request, suggest 3-5 highly relevant search terms or phrases that would help them find the best demos in a B2B AI demo database. "
+            "If the user is asking for clarification or advice, provide a concise, helpful response.\n"
+            f"User request: {user_query}\n"
+            "Respond with a short list of search terms or a brief answer."
+        )
+        try:
+            response = openai.chat.completions.create(
+                model=self.gpt_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                max_tokens=200
+            )
+            content = response.choices[0].message.content
+            return content.strip() if content else "(No response from AI)"
+        except Exception as e:
+            return f"Error: {e}"

@@ -130,7 +130,32 @@ input#customer_need {
 # Number of results
 top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
 
-# Run matcher automatically when input changes (simulate 'Enter' to submit)
+# --- FILTERS/FACETED SEARCH ---
+# Load the full DataFrame for filter options
+try:
+    df_full = pd.read_csv(SPREADSHEET_PATH)
+except Exception as e:
+    st.error(f"Could not load spreadsheet for filters: {e}")
+    df_full = None
+
+# Define filter columns (update as needed)
+FILTER_COLS = [
+    ("Industry", "Industry"),
+    ("Date Uploaded", "Date Uploaded"),
+    ("AI Capability", "Instalily AI Capabilities"),
+    ("Benefit", "Benefit to Client"),
+]
+
+selected_filters = {}
+if df_full is not None:
+    st.sidebar.markdown("### Filter Demos")
+    for label, col in FILTER_COLS:
+        if col in df_full.columns:
+            options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
+            selected = st.sidebar.selectbox(f"{label}", options, key=f"filter_{col}")
+            selected_filters[col] = selected
+
+# --- MAIN SEARCH AND MATCHING ---
 if customer_need.strip():
     with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
         try:
@@ -140,17 +165,33 @@ if customer_need.strip():
             st.error(f"Error: {e}")
             st.stop()
 
+    # --- APPLY FILTERS TO RESULTS ---
+    if df_full is not None and any(v != "All" for v in selected_filters.values()):
+        filtered = []
+        for res in results:
+            demo = res.get('demo_info', {})
+            match = True
+            for col, val in selected_filters.items():
+                if val != "All" and demo.get(col, None) != val:
+                    match = False
+                    break
+            if match:
+                filtered.append(res)
+        results = filtered
+
     if not results:
         st.info("No relevant demos found.")
     else:
         st.subheader("")
         for res in results:
             demo = res.get('demo_info', {})
+            # --- DEMO VIDEO PREVIEW ---
+            video_url = demo.get('Demo Video Link') or demo.get('Video Link') or demo.get('Demo link')
             # Use a container with st.markdown for the card, and apply the card CSS class
             st.markdown(f"""
 <div class='result-card'>
 
-**{demo.get(COMPANY_COL, 'N/A')}**
+<span style='font-size:2.2em; font-weight:800'>{demo.get(COMPANY_COL, 'N/A')}</span>
 
 [Demo Link: Click here]({res.get('demo_link')})
 
@@ -166,8 +207,37 @@ if customer_need.strip():
 
 **Benefit to Client:** {demo.get('Benefit to Client', '')}
 
-</div>
 """, unsafe_allow_html=True)
+            # Embed video if available and is a YouTube or mp4 link
+            if video_url and ("youtube.com" in video_url or "youtu.be" in video_url):
+                st.video(video_url)
+            elif video_url and video_url.endswith(('.mp4', '.webm', '.mov')):
+                st.video(video_url)
+            elif video_url and video_url.startswith('http'):
+                st.markdown(f"[Preview Video]({video_url})")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+# --- CHATBOT/CONVERSATIONAL UI ---
+# Simple chatbot: maintain chat history and allow follow-up/refinement
+if 'chat_history' not in st.session_state:
+    st.session_state['chat_history'] = []
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🤖 Chatbot Assistant")
+chat_input = st.sidebar.text_input("Ask the AI for help or suggestions:", key="chat_input", placeholder="E.g. Suggest search terms for insurance demos")
+if chat_input.strip():
+    # For demo: Use matcher to suggest search terms or clarify
+    try:
+        matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
+        response = matcher.suggest_search_terms(chat_input)
+        st.session_state['chat_history'].append((chat_input, response))
+    except Exception as e:
+        st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+
+if st.session_state['chat_history']:
+    for user, bot in st.session_state['chat_history'][-5:]:
+        st.sidebar.markdown(f"**You:** {user}")
+        st.sidebar.markdown(f"**AI:** {bot}")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by Instalily AI. Secure & ready for Streamlit Community Cloud.")
