@@ -147,23 +147,26 @@ from streamlit.components.v1 import html
 
 with st.form(key="search_form", clear_on_submit=False):
     st.markdown("<div class='input-row'>", unsafe_allow_html=True)
-    customer_need = st.text_area(
-        "Enter the client's problem:",
-        height=100,
-        key="customer_need",
-        help="Type your client's need and press Enter or click the arrow to search."
-    )
+    col1, col2 = st.columns([8, 1])
+    with col1:
+        customer_need = st.text_area(
+            "Enter the client's problem:",
+            height=100,
+            key="customer_need",
+            help="Type your client's need and press Enter or click the arrow to search."
+        )
+    with col2:
+        # Custom circular send button with arrow SVG, styled and aligned
+        send_btn_html = '''
+        <button type="submit" class="send-btn" style="background: #22263a; border: none; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;">
+            <svg class="send-arrow" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px;display:block;">
+                <circle cx="50" cy="50" r="48" fill="white"/>
+                <path d="M50 30 L50 70 M50 70 L35 55 M50 70 L65 55" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+        '''
+        html(send_btn_html, height=60)
     st.markdown("</div>", unsafe_allow_html=True)
-    # Custom circular send button with arrow SVG
-    send_btn_html = '''
-    <button type="submit" class="send-btn">
-        <svg class="send-arrow" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="48" fill="white"/>
-            <path d="M50 30 L50 70 M50 70 L35 55 M50 70 L65 55" stroke="#22263a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    </button>
-    '''
-    html(send_btn_html, height=60)
     submitted = st.form_submit_button(label="", help="Send")
 
 # Number of results
