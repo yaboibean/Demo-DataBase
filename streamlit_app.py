@@ -71,7 +71,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # File and columns - Use the actual CSV file and correct column names
-SPREADSHEET_PATH = os.getenv("DEMO_SPREADSHEET", "Copy of Master File Demos Database - Demos Database.csv")
+SPREADSHEET_PATH = "/Users/arjansingh/Downloads/Demo Database/Copy of Master File Demos Database - Demos Database.csv"
 MATCH_COLUMNS = ["Client Problem", "Instalily AI Capabilities", "Benefit to Client"]
 VIDEO_LINK_COL = "Demo link"  # Updated to match actual column name
 COMPANY_COL = "Name/Client"   # Updated to match actual column name
