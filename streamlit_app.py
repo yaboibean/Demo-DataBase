@@ -223,14 +223,54 @@ if customer_need.strip():
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🤖 Chatbot Assistant")
+# --- BIGGER, MORE PROMINENT CHATBOT CARD ---
+st.sidebar.markdown("""
+<style>
+.big-chatbot-card {
+    background: linear-gradient(135deg, #232946 80%, #1E90FF 100%);
+    border-radius: 1.5em;
+    padding: 2.2em 1.2em 1.5em 1.2em;
+    margin-bottom: 2em;
+    box-shadow: 0 4px 24px 0 rgba(30,144,255,0.13);
+    border: 2px solid #22263a;
+}
+.big-chatbot-title {
+    font-size: 2.1em;
+    font-weight: 900;
+    color: #FFD700;
+    margin-bottom: 0.5em;
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    letter-spacing: 1px;
+}
+.big-chatbot-input input {
+    font-size: 1.3em !important;
+    padding: 1.1em 1.2em !important;
+    border-radius: 1em !important;
+    margin-bottom: 1.2em !important;
+}
+.big-chatbot-response {
+    color: #fff;
+    font-size: 1.18em;
+    background: #232946;
+    border-radius: 1em;
+    padding: 1em 1.2em;
+    margin-bottom: 0.7em;
+    word-break: break-word;
+}
+</style>
+<div class='big-chatbot-card'>
+    <div class='big-chatbot-title'>🤖 InstaDemo Chatbot</div>
+""", unsafe_allow_html=True)
 
 chat_input = st.sidebar.text_input(
     "Ask the AI a question about B2B AI demos:",
     key="chat_input",
-    placeholder="E.g. What is a good demo for insurance fraud detection?"
+    placeholder="E.g. What is a good demo for insurance fraud detection?",
+    label_visibility="collapsed"
 )
+st.sidebar.markdown("</div>", unsafe_allow_html=True)
 
 if chat_input.strip():
     with st.spinner('AI is thinking...'):
@@ -273,11 +313,12 @@ if chat_input.strip():
             st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
 
 if st.session_state['chat_history']:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("#### Conversation History")
+    st.sidebar.markdown("<div class='big-chatbot-card'>", unsafe_allow_html=True)
+    st.sidebar.markdown("<b style='font-size:1.2em;'>Recent Chat</b>", unsafe_allow_html=True)
     for user, bot in st.session_state['chat_history'][-5:]:
-        st.sidebar.markdown(f"**You:** {user}")
-        st.sidebar.markdown(f"**AI:** {bot}")
+        st.sidebar.markdown(f"<div class='big-chatbot-response'><b>You:</b> {user}</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div class='big-chatbot-response'><b>AI:</b> {bot}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown("</div>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
