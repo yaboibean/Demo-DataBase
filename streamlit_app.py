@@ -205,7 +205,7 @@ if customer_need.strip():
 
 **Client Problem:** {demo.get('Client Problem', '')}
 
-**Instalily AI Capabilities:** {demo.get('Instalily AI Capabilities', '')}
+**InstaLILY AI Capabilities:** {demo.get('InstaLILY AI Capabilities', '')}
 
 **Benefit to Client:** {demo.get('Benefit to Client', '')}
 
@@ -243,13 +243,16 @@ if chat_input.strip():
                 sheet_summary = "(Spreadsheet data unavailable)"
             system_prompt = (
                 "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
+                "Always answer the user's question directly and concisely first. "
+                "Then, provide additional relevant information from the demo database. "
+                "If you mention a demo, always include its link. "
                 "You have access to a database of past demos in CSV format. "
                 "For every user question, use only the information in the provided database to answer. "
                 "If the answer is not in the data, say so. "
                 "Be concise, accurate, and helpful. "
                 "Never hallucinate or make up demos. "
-                "If the user asks for a recommendation, suggest demos from the database that best match their question. "
-                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database. "
+                "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
+                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
                 "If the user asks for a summary, provide a brief overview based on the data. "
                 "Here is the demo database (CSV):\n" + sheet_summary
             )
@@ -277,4 +280,4 @@ if st.session_state['chat_history']:
         st.sidebar.markdown(f"**AI:** {bot}")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("Developed by Instalily AI. Secure & ready for Streamlit Community Cloud.")
+st.sidebar.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
