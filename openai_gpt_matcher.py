@@ -67,16 +67,18 @@ class OpenAIGPTMatcher:
         for idx, problem in client_problems:
             if cleaned_customer_need.lower() == problem.lower():
                 demo_info = self.demos_df.iloc[idx].to_dict()
+                # Only use the 'Demo link ' column for the link
+                demo_link = demo_info.get('Demo link ', '')
                 exact_matches.append({
                     'rank': len(exact_matches) + 1,
                     'similarity_score': 1.0,
-                    'explanation': f'EXACT MATCH: This demo addresses the identical problem statement.',
+                    'explanation': 'EXACT MATCH: This demo addresses the identical problem statement.',
                     'demo_info': demo_info,
-                    'demo_index': idx
+                    'demo_index': idx,
+                    'demo_link': demo_link
                 })
                 if len(exact_matches) >= top_k:
                     return exact_matches
-        
         # If we have exact matches, return them
         if exact_matches:
             return exact_matches
@@ -122,10 +124,18 @@ class OpenAIGPTMatcher:
             idx = match.get('demo_index', None)
             if idx is not None and 0 <= idx < len(self.demos_df):
                 demo_info = self.demos_df.iloc[idx].to_dict()
+                demo_link = demo_info.get('Demo link ', '')
             else:
                 demo_info = {}
-            match['demo_info'] = demo_info
-            results.append(match)
+                demo_link = ''
+            # Always include explanation and demo_link at the top level
+            explanation = match.get('explanation', '')
+            results.append({
+                **match,
+                'demo_info': demo_info,
+                'demo_link': demo_link,
+                'explanation': explanation
+            })
         return results
 
     def debug_matching(self, customer_need: str) -> str:
