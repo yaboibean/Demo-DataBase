@@ -51,6 +51,13 @@ with st.sidebar:
     st.markdown("**Debug Info:**")
     st.write("OPENAI_API_KEY loaded:", mask_key(openai_api_key))
     st.write(".env path used:", dotenv_path)
+    # Show a preview of the loaded spreadsheet for verification
+    try:
+        df_preview = pd.read_csv(SPREADSHEET_PATH)
+        st.write("**Spreadsheet Preview:**")
+        st.dataframe(df_preview.head(5))
+    except Exception as e:
+        st.error(f"Could not load spreadsheet: {e}")
 
 if not openai_api_key:
     st.error("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
@@ -63,7 +70,7 @@ customer_need = st.text_area(
 )
 
 # Number of results
-top_k = st.sidebar.slider("Number of top matches", 1, 10, 5)
+top_k = st.sidebar.slider("Number of top matches", 1, 10, 2)
 
 # Run matcher
 if st.button("Find Matches"):
