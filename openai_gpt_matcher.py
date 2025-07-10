@@ -3,27 +3,51 @@ import openai
 import pandas as pd
 from typing import List, Dict, Any
 
+try:
+    import gspread
+    from gspread_dataframe import get_as_dataframe
+    from google.oauth2.service_account import Credentials
+except ImportError:
+    gspread = None
+    get_as_dataframe = None
+    Credentials = None
+
 class OpenAIGPTMatcher:
-    def __init__(self, spreadsheet_path: str, match_columns: List[str], openai_api_key: str, gpt_model: str = "gpt-4o"):
+    def __init__(self, spreadsheet_path: str, match_columns: List[str], openai_api_key: str, gpt_model: str = "gpt-4o", sheet_mode: bool = False, sheet_name: str = None, creds_json: str = None):
         """
         Initialize the OpenAIGPTMatcher.
         Args:
-            spreadsheet_path: Path to the CSV file containing demo data.
+            spreadsheet_path: Path to the CSV file or Google Sheet ID.
             match_columns: List of columns to use for matching.
             openai_api_key: OpenAI API key string.
             gpt_model: OpenAI GPT model name.
+            sheet_mode: If True, load from Google Sheets instead of CSV.
+            sheet_name: Name of the worksheet in Google Sheets.
+            creds_json: Path to Google service account JSON.
         """
         self.spreadsheet_path = spreadsheet_path # Path to the CSV file
         self.match_columns = match_columns
         self.gpt_model = gpt_model or "gpt-4o"
         openai.api_key = openai_api_key
-        try:
-            self.demos_df = pd.read_csv(spreadsheet_path)
-        except Exception as e:
-            raise RuntimeError(f"Failed to read spreadsheet: {e}")
+        if sheet_mode:
+            if not (gspread and get_as_dataframe and Credentials):
+                raise ImportError("gspread, gspread_dataframe, and google-auth must be installed for Google Sheets support.")
+            if not (sheet_name and creds_json):
+                raise ValueError("sheet_name and creds_json are required for Google Sheets mode.")
+            scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+            creds = Credentials.from_service_account_file(creds_json, scopes=scopes)
+            gc = gspread.authorize(creds)
+            ws = gc.open_by_key(spreadsheet_path).worksheet(sheet_name)
+            self.demos_df = get_as_dataframe(ws, evaluate_formulas=True, header=0)
+            self.demos_df = self.demos_df.dropna(how='all')
+        else:
+            try:
+                self.demos_df = pd.read_csv(spreadsheet_path)
+            except Exception as e:
+                raise RuntimeError(f"Failed to read spreadsheet: {e}")
         if not all(col in self.demos_df.columns for col in match_columns):
             missing = [col for col in match_columns if col not in self.demos_df.columns]
-            raise ValueError(f"Missing columns in CSV: {missing}")
+            raise ValueError(f"Missing columns in data: {missing}")
 
     def _format_demo(self, row: pd.Series) -> str:
         """
