@@ -91,6 +91,12 @@ if st.button("Find Matches"):
             st.subheader("Top Matches:")
             for res in results:
                 demo = res.get('demo_info', {})
+                # Show the new required fields at the top
+                st.markdown(f"**Similarity Score:** {res.get('similarity_score', 'N/A')}")
+                st.markdown(f"**Reason:** {res.get('explanation', 'N/A')}")
+                demo_link = res.get('demo_link')
+                if demo_link:
+                    st.markdown(f"**Demo Link:** [Click here]({demo_link})")
                 # Only show the requested fields, word-for-word from the CSV
                 fields_to_show = [
                     (COMPANY_COL, 'Company Name'),
