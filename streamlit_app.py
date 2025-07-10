@@ -193,9 +193,10 @@ with st.sidebar:
             except Exception as e:
                 st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
     # --- SHOW CHAT HISTORY (last 6) ---
-    if st.session_state['chat_history']:
+    chat_history = st.session_state.get('chat_history', [])
+    if chat_history:
         st.markdown('''<style>.modern-chat-bubble-user{background:#23272f;color:#fff;border-radius:1.2em 1.2em 0.3em 1.2em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-end;max-width:90%;}.modern-chat-bubble-bot{background:#ececf1;color:#222;border-radius:1.2em 1.2em 1.2em 0.3em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-start;max-width:90%;}</style>''', unsafe_allow_html=True)
-        for user, bot in st.session_state['chat_history'][-6:]:
+        for user, bot in chat_history[-6:]:
             st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
             st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
     st.markdown("---")
