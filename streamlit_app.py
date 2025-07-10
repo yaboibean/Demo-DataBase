@@ -91,23 +91,6 @@ def get_openai_key():
 
 openai_api_key = get_openai_key()
 
-# Debug: Show the loaded API key (masked) in sidebar for troubleshooting
-with st.sidebar:
-    st.markdown("**Debug Info:**")
-    st.write("OPENAI_API_KEY loaded:", mask_key(openai_api_key))
-    st.write(".env path used:", dotenv_path)
-    # Show a preview of the loaded spreadsheet for verification
-    try:
-        df_preview = pd.read_csv(SPREADSHEET_PATH)
-        st.write("**Spreadsheet Preview:**")
-        st.dataframe(df_preview.head(5))
-    except Exception as e:
-        st.error(f"Could not load spreadsheet: {e}")
-
-if not openai_api_key:
-    st.error("OpenAI API key not found. Please set it in Streamlit secrets (for cloud) or in a .env file (for local use). The variable name must be 'OPENAI_API_KEY'.")
-    st.stop()
-
 # Input box
 customer_need = st.text_input(
     "Enter the client's problem:",
