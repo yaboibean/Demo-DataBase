@@ -25,16 +25,20 @@ st.set_page_config(
 # Title
 st.title("AI-Powered Demo Matcher")
 
-# File and columns
-SPREADSHEET_PATH = os.getenv("DEMO_SPREADSHEET", "demo_data.csv")
+# File and columns - Use the actual CSV file and correct column names
+SPREADSHEET_PATH = os.getenv("DEMO_SPREADSHEET", "Copy of Master File Demos Database - Demos Database.csv")
 MATCH_COLUMNS = ["Client Problem", "Instalily AI Capabilities", "Benefit to Client"]
-VIDEO_LINK_COL = "Video Link"
-COMPANY_COL = "Company Name"
+VIDEO_LINK_COL = "Demo link"  # Updated to match actual column name
+COMPANY_COL = "Name/Client"   # Updated to match actual column name
 
 # Load API key robustly (strip whitespace just in case)
 def get_openai_key():
-    if "openai_api_key" in st.secrets:
-        return st.secrets["openai_api_key"].strip()
+    # Try Streamlit secrets first (for cloud), then .env (for local)
+    try:
+        if "openai_api_key" in st.secrets:
+            return st.secrets["openai_api_key"].strip()
+    except:
+        pass
     key = os.getenv("OPENAI_API_KEY")
     if key:
         return key.strip()
