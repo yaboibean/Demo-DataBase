@@ -279,7 +279,7 @@ else:
         st.markdown("### 🤖 Chatbot Assistant")
         chat_input = st.text_input(
             "Ask the AI a question about B2B AI demos:",
-            key="chat_input_sidebar",
+            key="chat_input_left",
             placeholder="E.g. What is a good demo for insurance fraud detection?"
         )
         if chat_input.strip():
