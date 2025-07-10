@@ -135,287 +135,149 @@ if df_full is not None:
     for label, col in FILTER_COLS:
         if col in df_full.columns:
             options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
-            selected = st.sidebar.selectbox(f"{label}", options, key=f"filter_sidebar_{col}_only")
+            selected = st.sidebar.selectbox(f"{label}", options, key=f"filter_{col}")
             selected_filters[col] = selected
     # Date Uploaded range filter
     if "Date Uploaded" in df_full.columns:
         min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
         max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
-        start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date_sidebar_only")
-        end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date_sidebar_only")
+        start_date = st.sidebar.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date")
+        end_date = st.sidebar.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date")
 
-# --- SIDEBAR: 20% WIDTH, CONTAINS CHATBOT + FILTERS ---
-with st.sidebar:
-    st.markdown("### 🤖 Chatbot Assistant")
-    chat_input = st.text_input(
-        "Ask the AI a question about B2B AI demos:",
-        key="chat_input_sidebar",
-        placeholder="E.g. What is a good demo for insurance fraud detection?"
-    )
-    if chat_input.strip():
-        st.session_state['expand_chat'] = True
-        with st.spinner('AI is thinking...'):
-            try:
-                if df_full is not None:
-                    preview_cols = [col for col in df_full.columns if col not in (None, '')]
-                    preview_df = df_full[preview_cols].head(20)
-                    sheet_summary = preview_df.to_csv(index=False)
-                else:
-                    sheet_summary = "(Spreadsheet data unavailable)"
-                system_prompt = (
-                    "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
-                    "Always answer the user's question directly and concisely first. "
-                    "Then, provide additional relevant information from the demo database. "
-                    "If you mention a demo, always include its link. "
-                    "You have access to a database of past demos in CSV format. "
-                    "For every user question, use only the information in the provided database to answer. "
-                    "If the answer is not in the data, say so. "
-                    "Be concise, accurate, and helpful. "
-                    "Never hallucinate or make up demos. "
-                    "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
-                    "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
-                    "If the user asks for a summary, provide a brief overview based on the data. "
-                    "Here is the demo database (CSV):\n" + sheet_summary
-                )
-                prompt = f"User question: {chat_input}"
-                import openai
-                openai.api_key = openai_api_key
-                response = openai.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[{"role": "system", "content": system_prompt},
-                             {"role": "user", "content": prompt}],
-                    temperature=0.3,
-                    max_tokens=400
-                )
-                content = response.choices[0].message.content
-                answer = content.strip() if content else "(No response from AI)"
-                st.session_state['chat_history'].append((chat_input, answer))
-            except Exception as e:
-                st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
-    # --- SHOW CHAT HISTORY (last 6) ---
-    chat_history = st.session_state.get('chat_history', [])
-    if chat_history:
-        st.markdown('''<style>.modern-chat-bubble-user{background:#23272f;color:#fff;border-radius:1.2em 1.2em 0.3em 1.2em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-end;max-width:90%;}.modern-chat-bubble-bot{background:#ececf1;color:#222;border-radius:1.2em 1.2em 1.2em 0.3em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-start;max-width:90%;}</style>''', unsafe_allow_html=True)
-        for user, bot in chat_history[-6:]:
-            st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
-    st.markdown("---")
-    st.markdown("### Filter Demos")
+# --- MAIN SEARCH AND MATCHING ---
+if customer_need.strip():
+    if not isinstance(openai_api_key, str) or not openai_api_key:
+        st.error("OpenAI API key is missing or invalid. Please set your API key in Streamlit secrets or your .env file.")
+        st.stop()
+    with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
+        try:
+            # Use CSV file directly, not Google Sheets
+            matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
+            results = matcher.find_best_demos(customer_need, top_k=top_k)
+        except Exception as e:
+            st.error(f"Error: {e}")
+            st.stop()
+
+    # --- APPLY FILTERS TO RESULTS ---
     if df_full is not None:
-        for label, col in FILTER_COLS:
-            if col in df_full.columns:
-                options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
-                selected = st.selectbox(f"{label}", options, key=f"filter_sidebar_{col}_only")
-                selected_filters[col] = selected
-        if "Date Uploaded" in df_full.columns:
-            min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
-            max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
-            start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date_sidebar_only")
-            end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date_sidebar_only")
+        filtered = []
+        for res in results:
+            demo = res.get('demo_info', {})
+            match = True
+            # Industry filter
+            for col, val in selected_filters.items():
+                if val != "All" and demo.get(col, None) != val:
+                    match = False
+                    break
+            # Date Uploaded filter
+            if match and start_date and end_date and "Date Uploaded" in demo:
+                try:
+                    demo_date = pd.to_datetime(demo["Date Uploaded"], errors='coerce').date()
+                    if demo_date < start_date or demo_date > end_date:
+                        match = False
+                except Exception:
+                    match = False
+            if match:
+                filtered.append(res)
+        results = filtered
 
-# --- Ensure chat_history is always initialized (move to very top) ---
+    if not results:
+        st.info("No relevant demos found.")
+    else:
+        st.subheader("")
+        for res in results:
+            demo = res.get('demo_info', {})
+            # --- DEMO VIDEO PREVIEW ---
+            video_url = demo.get('Demo Video Link') or demo.get('Video Link') or demo.get('Demo link')
+            # Use a container with st.markdown for the card, and apply the card CSS class
+            st.markdown(f"""
+<div class='result-card'>
+
+<span style='font-size:2.2em; font-weight:800'>{demo.get(COMPANY_COL, 'N/A')}</span>
+
+[Demo Link: Click here]({res.get('demo_link')})
+
+**Date Uploaded:** {demo.get('Date Uploaded', 'N/A')}
+
+**⭐ Similarity Score:** {res.get('similarity_score', 'N/A'):.3f}
+
+**Reason:** <span style='color:#00FFAA'>{res.get('explanation', 'N/A')}</span>
+
+**Client Problem:** {demo.get('Client Problem', '')}
+
+**InstaLILY AI Capabilities:** {demo.get('InstaLILY AI Capabilities', '')}
+
+**Benefit to Client:** {demo.get('Benefit to Client', '')}
+
+""", unsafe_allow_html=True)
+            # Embed video if available and is a YouTube or mp4 link
+            if video_url and ("youtube.com" in video_url or "youtu.be" in video_url):
+                st.video(video_url)
+            elif video_url and video_url.endswith(('.mp4', '.webm', '.mov')):
+                st.video(video_url)
+            elif video_url and video_url.startswith('http'):
+                st.markdown(f"[Preview Video]({video_url})")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+# --- SIMPLE SIDEBAR CHATBOT UI ---
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
-# --- MAIN AREA: 80% WIDTH, SEARCH/RESULTS ---
-# --- MODERN DYNAMIC LAYOUT: MAIN AREA SPLIT ---
-if st.session_state.get('expand_chat', False):
-    # --- CENTERED CHATBOT PANEL, FULL WIDTH ---
-    st.markdown('''
-    <style>
-    .centered-chat-transition {
-        animation: slideInChat 0.6s cubic-bezier(.68,-0.55,.27,1.55) forwards;
-        opacity: 0;
-    }
-    @keyframes slideInChat {
-        from {
-            transform: translateY(60px) scale(0.95);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
-    }
-    .centered-chat-panel {
-        background: #181c2b;
-        border-radius: 1.2em;
-        padding: 2em 2.5em 1em 2.5em;
-        min-height: 500px;
-        max-width: 800px;
-        margin: 3em auto 2em auto;
-        box-shadow: 0 2px 32px 0 rgba(30,144,255,0.18);
-        border: 1px solid #22263a;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        width: 90vw;
-    }
-    .modern-chat-bubble-user {
-        background: #23272f;
-        color: #fff;
-        border-radius: 1.2em 1.2em 0.3em 1.2em;
-        padding: 0.7em 1.1em;
-        margin-bottom: 0.3em;
-        align-self: flex-end;
-        max-width: 90%;
-        animation: fadeIn 0.3s;
-    }
-    .modern-chat-bubble-bot {
-        background: #ececf1;
-        color: #222;
-        border-radius: 1.2em 1.2em 1.2em 0.3em;
-        padding: 0.7em 1.1em;
-        margin-bottom: 0.3em;
-        align-self: flex-start;
-        max-width: 90%;
-        animation: fadeIn 0.3s;
-    }
-    .modern-chat-label {
-        font-size: 0.85em;
-        color: #888;
-        margin-bottom: 0.1em;
-        margin-left: 0.2em;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    </style>
-    ''', unsafe_allow_html=True)
-    st.markdown("<div class='centered-chat-panel centered-chat-transition'>", unsafe_allow_html=True)
-    for user, bot in st.session_state['chat_history'][-8:]:
-        st.markdown(f"<div class='modern-chat-label'>You</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='modern-chat-label'>AI</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-else:
-    # --- 80:20 LAYOUT: LEFT (CHATBOT + FILTERS), RIGHT (SEARCH/RESULTS) ---
-    col_left, col_right = st.columns([1, 4], gap="large")
-    with col_left:
-        # --- CHATBOT AT TOP OF LEFT COLUMN ---
-        st.markdown("### 🤖 Chatbot Assistant")
-        chat_input = st.text_input(
-            "Ask the AI a question about B2B AI demos:",
-            key="chat_input_left",
-            placeholder="E.g. What is a good demo for insurance fraud detection?"
-        )
-        if chat_input.strip():
-            st.session_state['expand_chat'] = True
-            with st.spinner('AI is thinking...'):
-                try:
-                    if df_full is not None:
-                        preview_cols = [col for col in df_full.columns if col not in (None, '')]
-                        preview_df = df_full[preview_cols].head(20)
-                        sheet_summary = preview_df.to_csv(index=False)
-                    else:
-                        sheet_summary = "(Spreadsheet data unavailable)"
-                    system_prompt = (
-                        "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
-                        "Always answer the user's question directly and concisely first. "
-                        "Then, provide additional relevant information from the demo database. "
-                        "If you mention a demo, always include its link. "
-                        "You have access to a database of past demos in CSV format. "
-                        "For every user question, use only the information in the provided database to answer. "
-                        "If the answer is not in the data, say so. "
-                        "Be concise, accurate, and helpful. "
-                        "Never hallucinate or make up demos. "
-                        "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
-                        "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
-                        "If the user asks for a summary, provide a brief overview based on the data. "
-                        "Here is the demo database (CSV):\n" + sheet_summary
-                    )
-                    prompt = f"User question: {chat_input}"
-                    import openai
-                    openai.api_key = openai_api_key
-                    response = openai.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[{"role": "system", "content": system_prompt},
-                                 {"role": "user", "content": prompt}],
-                        temperature=0.3,
-                        max_tokens=400
-                    )
-                    content = response.choices[0].message.content
-                    answer = content.strip() if content else "(No response from AI)"
-                    st.session_state['chat_history'].append((chat_input, answer))
-                except Exception as e:
-                    st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
-        # --- SHOW CHAT HISTORY (last 6) ---
-        if st.session_state['chat_history']:
-            st.markdown('''<style>.modern-chat-bubble-user{background:#23272f;color:#fff;border-radius:1.2em 1.2em 0.3em 1.2em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-end;max-width:90%;}.modern-chat-bubble-bot{background:#ececf1;color:#222;border-radius:1.2em 1.2em 1.2em 0.3em;padding:0.7em 1.1em;margin-bottom:0.3em;align-self:flex-start;max-width:90%;}</style>''', unsafe_allow_html=True)
-            for user, bot in st.session_state['chat_history'][-6:]:
-                st.markdown(f"<div class='modern-chat-bubble-user'>{user}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div class='modern-chat-bubble-bot'>{bot}</div>", unsafe_allow_html=True)
-        # --- FILTERS BELOW CHATBOT ---
-        if df_full is not None:
-            st.markdown("---")
-            st.markdown("### Filter Demos")
-            for label, col in FILTER_COLS:
-                if col in df_full.columns:
-                    options = ["All"] + sorted(df_full[col].dropna().unique().tolist())
-                    selected = st.selectbox(f"{label}", options, key=f"filter_left_{col}")
-                    selected_filters[col] = selected
-            if "Date Uploaded" in df_full.columns:
-                min_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').min()
-                max_date = pd.to_datetime(df_full["Date Uploaded"], errors='coerce').max()
-                start_date = st.date_input("Start Date (Date Uploaded)", value=min_date.date() if pd.notnull(min_date) else None, key="start_date_left")
-                end_date = st.date_input("End Date (Date Uploaded)", value=max_date.date() if pd.notnull(max_date) else None, key="end_date_left")
-    with col_right:
-        # --- MAIN SEARCH AND MATCHING ---
-        if customer_need.strip():
-            if not isinstance(openai_api_key, str) or not openai_api_key:
-                st.error("OpenAI API key is missing or invalid. Please set your API key in Streamlit secrets or your .env file.")
-                st.stop()
-            with st.spinner('🔎 The AI model is analyzing your request and searching for the best matches...'):
-                try:
-                    matcher = OpenAIGPTMatcher(SPREADSHEET_PATH, MATCH_COLUMNS, openai_api_key)
-                    results = matcher.find_best_demos(customer_need, top_k=top_k)
-                except Exception as e:
-                    st.error(f"Error: {e}")
-                    st.stop()
-            # --- APPLY FILTERS TO RESULTS ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🤖 Chatbot Assistant")
+
+chat_input = st.sidebar.text_input(
+    "Ask the AI a question about B2B AI demos:",
+    key="chat_input",
+    placeholder="E.g. What is a good demo for insurance fraud detection?"
+)
+
+if chat_input.strip():
+    with st.spinner('AI is thinking...'):
+        try:
             if df_full is not None:
-                filtered = []
-                for res in results:
-                    demo = res.get('demo_info', {})
-                    match = True
-                    for col, val in selected_filters.items():
-                        if val != "All" and demo.get(col, None) != val:
-                            match = False
-                            break
-                    if match and start_date and end_date and "Date Uploaded" in demo:
-                        try:
-                            demo_date = pd.to_datetime(demo["Date Uploaded"], errors='coerce').date()
-                            if demo_date < start_date or demo_date > end_date:
-                                match = False
-                        except Exception:
-                            match = False
-                    if match:
-                        filtered.append(res)
-                results = filtered
-            if not results:
-                st.info("No relevant demos found.")
+                preview_cols = [col for col in df_full.columns if col not in (None, '')]
+                preview_df = df_full[preview_cols].head(20)
+                sheet_summary = preview_df.to_csv(index=False)
             else:
-                st.subheader("")
-                for res in results:
-                    demo = res.get('demo_info', {})
-                    video_url = demo.get('Demo Video Link') or demo.get('Video Link') or demo.get('Demo link')
-                    st.markdown(f"""
-<div class='result-card'>
-<span style='font-size:2.2em; font-weight:800'>{demo.get(COMPANY_COL, 'N/A')}</span>
-[Demo Link: Click here]({res.get('demo_link')})
-**Date Uploaded:** {demo.get('Date Uploaded', 'N/A')}
-**⭐ Similarity Score:** {res.get('similarity_score', 'N/A'):.3f}
-**Reason:** <span style='color:#00FFAA'>{res.get('explanation', 'N/A')}</span>
-**Client Problem:** {demo.get('Client Problem', '')}
-**InstaLILY AI Capabilities:** {demo.get('InstaLILY AI Capabilities', '')}
-**Benefit to Client:** {demo.get('Benefit to Client', '')}
-""", unsafe_allow_html=True)
-                    if video_url and ("youtube.com" in video_url or "youtu.be" in video_url):
-                        st.video(video_url)
-                    elif video_url and video_url.endswith(('.mp4', '.webm', '.mov')):
-                        st.video(video_url)
-                    elif video_url and video_url.startswith('http'):
-                        st.markdown(f"[Preview Video]({video_url})")
-                    st.markdown("</div>", unsafe_allow_html=True)
+                sheet_summary = "(Spreadsheet data unavailable)"
+            system_prompt = (
+                "You are an expert B2B AI demo assistant for a company that matches client needs to AI demos. "
+                "Always answer the user's question directly and concisely first. "
+                "Then, provide additional relevant information from the demo database. "
+                "If you mention a demo, always include its link. "
+                "You have access to a database of past demos in CSV format. "
+                "For every user question, use only the information in the provided database to answer. "
+                "If the answer is not in the data, say so. "
+                "Be concise, accurate, and helpful. "
+                "Never hallucinate or make up demos. "
+                "If the user asks for a recommendation, suggest demos from the database that best match their question, and always provide the demo link. "
+                "If the user asks about a specific client, capability, or benefit, use the relevant fields from the database and provide the demo link if available. "
+                "If the user asks for a summary, provide a brief overview based on the data. "
+                "Here is the demo database (CSV):\n" + sheet_summary
+            )
+            prompt = f"User question: {chat_input}"
+            import openai
+            openai.api_key = openai_api_key
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=400
+            )
+            content = response.choices[0].message.content
+            answer = content.strip() if content else "(No response from AI)"
+            st.session_state['chat_history'].append((chat_input, answer))
+        except Exception as e:
+            st.session_state['chat_history'].append((chat_input, f"Error: {e}"))
+
+if st.session_state['chat_history']:
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("#### Conversation History")
+    for user, bot in st.session_state['chat_history'][-5:]:
+        st.sidebar.markdown(f"**You:** {user}")
+        st.sidebar.markdown(f"**AI:** {bot}")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("Developed by InstaLILY AI. Secure & ready for Streamlit Community Cloud.")
